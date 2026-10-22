@@ -1,4 +1,6 @@
 # Запуск: docker compose up --build   →   http://localhost:8080
+# С локальной моделью (опционально): LLM_ENABLED=1 docker compose --profile llm up --build
+#   затем: docker compose exec ollama ollama pull deepseek-r1:1.5b
 services:
   db:
     image: postgres:16.4-alpine
@@ -39,6 +41,13 @@ services:
     ports: ["8080:80"]
     depends_on:
       backend: { condition: service_healthy }
+  # Локальная модель с открытыми весами. Не входит в проверяемый путь: поднимается только с --profile llm.
+  ollama:
+    image: ollama/ollama:0.12.6
+    profiles: [llm]
+    volumes: [ollama:/root/.ollama]
+    ports: ["11434:11434"]
 volumes:
   pgdata:
   uploads:
+  ollama:
