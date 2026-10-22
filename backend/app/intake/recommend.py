@@ -107,7 +107,8 @@ def _evaluate(p: dict, v: dict, text: str) -> dict:
             score += 0.5
             reasons.append(f"Срок {_term(term)} подходит")
         else:
-            caveats.append(f"Срок по продукту {_term(p['min_term'])}–{_term(p['max_term'])}, предложим {_term(s_term)}")
+            span = _term(p["min_term"]) if p["min_term"] == p["max_term"] else f"{_term(p['min_term'])}–{_term(p['max_term'])}"
+            caveats.append(f"Срок по продукту {span}, предложим {_term(s_term)}")
     if form and age is not None and not blockers:
         reasons.append(f"Доступен для {form}, бизнесу от {el['min_business_age_months']} мес.")
     if el["collateral"] == "none":

@@ -106,7 +106,7 @@ def test_fake_model_contract(client, ivan, model_on):
     text = "Я Иванов Пётр Сергеевич, тел +7 900 123 45 67, ИП, хочу новую печь для пекарни, на 3 года"
     s = client.post("/api/intake/start", json={"text": text}, headers=ivan).json()
     assert all("123 45 67" not in c and "Иванов" not in c for c in calls)
-    assert s["known"]["amount"] == {"value": 2_000_000, "label": "2 000 000 ₽", "source": "ai"}
+    assert s["known"]["amount"] == {"value": 2_000_000, "label": "2 млн ₽", "source": "ai"}
     assert s["known"]["goal"]["source"] == "text" and "legal_form" in s["known"]  # правила важнее модели
     q = s["question"]
     assert q["field"] == "business_age_months" and q["source"] == "bank"  # ответ про ИНН отклонён

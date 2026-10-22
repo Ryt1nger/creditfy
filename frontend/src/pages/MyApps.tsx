@@ -35,7 +35,7 @@ export default function MyApps() {
       {isLoading && <div className="stack"><Loading h={200} /><Loading h={200} /></div>}
       {error && <ErrorBox error={error} retry={refetch} />}
       {data && data.length === 0 && <Empty title="Заявок пока нет" text="Начните с короткого описания задачи — подскажем подходящий продукт и посчитаем платёж." action={<Link className="btn primary" to="/apply">Подать первую заявку</Link>} />}
-      <div className="grid g2" style={{ alignItems: 'stretch' }}>{(data ?? []).map((a) => <AppCard key={a.id} a={a} to={a.status === 'DRAFT' ? `/apply?draft=${a.id}` : `/applications/${a.id}`} />)}</div>
+      <div className="grid g2" style={{ alignItems: 'stretch' }}>{(data ?? []).map((a) => <AppCard key={a.id} a={a} to={a.status === 'DRAFT' ? `/apply/${a.id}` : `/applications/${a.id}`} />)}</div>
     </div>
   )
 }

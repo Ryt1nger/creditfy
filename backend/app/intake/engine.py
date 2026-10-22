@@ -16,6 +16,9 @@ ENUMS = {"goal", "legal_form", "collateral"}
 
 def option_label(field: str, value) -> str:
     f = field_registry()[field]
+    if field in ("amount", "term"):  # число показываем как есть, а не подписью ближайшей карточки
+        from .recommend import _rub, _term
+        return _rub(value) if field == "amount" else _term(value)
     for o in f["question"]["options"]:
         if o["value"] == value:
             return o["label"]

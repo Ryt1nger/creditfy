@@ -21,7 +21,9 @@ export function Shell() {
   const bank = me?.role !== 'client'
   useEffect(() => { const h = (e: MouseEvent) => { if (open && ref.current && !ref.current.contains(e.target as Node)) setOpen('') }; document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h) }, [open])
   useEffect(() => { if (!loc.pathname.startsWith('/apply')) window.scrollTo({ top: 0, behavior: 'smooth' }) }, [loc.pathname])
+  const focus = /^\/apply\/\d+/.test(loc.pathname)
   if (!me) return null
+  if (focus) return <main className="focus-page"><Outlet /></main>
   const role = { client: 'Предприниматель', operator: 'Оператор банка', underwriter: 'Андеррайтер' }[me.role]
   const apps = loc.pathname.startsWith('/apply') || loc.pathname.startsWith('/applications')
   const soon = () => toast('Этот раздел в демо-версии не реализован')

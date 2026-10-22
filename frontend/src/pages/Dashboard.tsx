@@ -72,6 +72,8 @@ function CalcMini({ rate, onGo }: { rate: number; onGo: (amount: number, term: n
   )
 }
 
+const WSTEPS = ['Сумма и срок', 'Компания', 'Документы', 'Проверка', 'Отправка']
+
 /** Вкладка «Продукты» — главная кабинета (макет 1–2) + расширенный контент. */
 export default function Home() {
   const nav = useNavigate(); const { data } = useMyApps(); const { data: products } = useProducts()
@@ -88,10 +90,10 @@ export default function Home() {
         <section className="draft">
           <div>
             <h3>{SHORT[draft.product_code]?.name ?? draft.product_name}</h3>
-            <div className="row" style={{ marginTop: 10 }}><span className="pill red">Черновик</span><span className="muted small">Следующий шаг — документы</span></div>
-            <div className="mini"><div className="done">1 Параметры</div><div className="done">2 Компания</div><div className="cur">3 Документы</div><div>4 Решение</div></div>
+            <div className="row" style={{ marginTop: 10 }}><span className="pill red">Черновик</span><span className="muted small">Продолжим с шага {draft.wizard_step || 1} из 5 · {WSTEPS[(draft.wizard_step || 1) - 1]}</span></div>
+            <div className="mini" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>{WSTEPS.map((t, i) => <div key={t} className={i + 1 < (draft.wizard_step || 1) ? 'done' : i + 1 === (draft.wizard_step || 1) ? 'cur' : ''}>{i + 1} {t}</div>)}</div>
           </div>
-          <Link to={`/apply?draft=${draft.id}`} className="btn primary lg" style={{ minWidth: 240, justifyContent: 'space-between' }}>Продолжить заявку <IArrow /></Link>
+          <Link to={`/apply/${draft.id}`} className="btn primary lg" style={{ minWidth: 240, justifyContent: 'space-between' }}>Продолжить с шага {draft.wizard_step || 1} <IArrow /></Link>
         </section>
       )}
       <AssistantBox value={need} onChange={setNeed} onSubmit={() => go(need)} />

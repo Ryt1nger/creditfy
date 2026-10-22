@@ -83,7 +83,7 @@ export function BankReview() {
     <div className="stack lg">
       <div className="row"><button className="btn light sm" onClick={() => nav('/bank')}><IBack size={18} /> К очереди</button></div>
       <section className="card stack">
-        <div className="row between wrap"><div><span className="tiny muted">{a.number} · создана {dt(a.created_at)}</span><h1 style={{ fontSize: 'clamp(26px,3.4vw,38px)', marginTop: 4 }}>{a.company.name}</h1><div className="muted">ИНН {a.company.inn} · {a.product_name}</div></div>
+        <div className="row between wrap"><div><span className="tiny muted">{a.number} · создана {dt(a.created_at)}</span><h1 style={{ fontSize: 'clamp(26px,3.4vw,38px)', marginTop: 4 }}>{a.company!.name}</h1><div className="muted">ИНН {a.company!.inn} · {a.product_name}</div></div>
           <div style={{ textAlign: 'right' }}><div className="sum num">{rub(a.amount)}</div><div className="muted small">на {months(a.term_months)}{a.has_collateral ? ' · залог' : ''}</div></div></div>
         <Stepper steps={a.steps} current={a.step} status={a.status} running={a.processing} />
         <div className="row wrap"><StatusPill a={a} />{a.assigned_to ? <span className="pill">Ведёт: {a.assigned_to}</span> : <button className="btn sm dark" onClick={() => call('/take', undefined, 'Заявка взята в работу')}>Взять в работу</button>}</div>
@@ -101,7 +101,7 @@ export function BankReview() {
                 {b.can_edit_docs && <div className="row" style={{ gap: 6 }}><button className="btn sm light" aria-label="Принять" onClick={() => call(`/documents/${d.id}/review`, { status: 'verified' })}><ICheck size={16} /></button><button className="btn sm light" aria-label="Отклонить" onClick={() => call(`/documents/${d.id}/review`, { status: 'rejected', comment: 'Документ нечитаем или не соответствует' })}><IX size={16} /></button></div>}</div>))}
           </section>
           <div className="grid g2" style={{ alignItems: 'start' }}>
-            <section className="card stack"><h3>Данные клиента</h3><div className="small">Контакт: {a.contact.name} · {a.contact.phone}</div><div className="small">Руководитель: {a.company.director}</div><div className="small">Адрес: {a.company.address}</div><div className="small">Выручка: {rub(a.financials.revenue_year)} · прибыль: {rub(a.financials.net_profit_year)}</div><div className="small">Оборот/мес.: {rub(a.financials.monthly_turnover)} · платежи: {rub(a.financials.monthly_obligations)}</div></section>
+            <section className="card stack"><h3>Данные клиента</h3><div className="small">Контакт: {a.contact.name} · {a.contact.phone}</div><div className="small">Руководитель: {a.company!.director}</div><div className="small">Адрес: {a.company!.address}</div><div className="small">Выручка: {rub(a.financials.revenue_year)} · прибыль: {rub(a.financials.net_profit_year)}</div><div className="small">Оборот/мес.: {rub(a.financials.monthly_turnover)} · платежи: {rub(a.financials.monthly_obligations)}</div></section>
             <section className="card stack"><h3>Журнал и аудит</h3><Timeline events={a.events} /></section>
           </div>
         </div>

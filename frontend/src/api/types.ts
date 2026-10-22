@@ -25,13 +25,23 @@ export interface ApplicationSummary {
   id: number; number: string; company_name: string; product_code: string; product_name: string
   amount: number; term_months: number
   status: StatusCode; status_label: string; step: number; group: StatusGroup; hint: string; processing: boolean
+  what: string; needs_action: boolean; action_text: string; wizard_step: number
   created_at: string; updated_at: string; decision: string | null; offer: OfferBrief | null
   assigned_to: string | null; risk_grade: string | null; score: number | null; route: string | null
   open_requests: number
 }
+export interface Extraction {
+  id: number; field: string; label: string; value: number | null; original_value: number | null
+  source: string; source_label: string; confidence: number; status: 'ok' | 'edited' | 'conflict' | 'confirmed'; note: string | null
+}
 export interface DocumentItem {
   id: number; kind: string; label: string; filename: string; size: number
-  status: 'uploaded' | 'verified' | 'rejected'; review_comment: string | null; extraction: string
+  status: 'uploaded' | 'verified' | 'rejected'; review_comment: string | null
+  extraction: 'ok' | 'partial' | 'not_available' | 'not_required' | string; extraction_note?: string | null; extractions: Extraction[]
+}
+export interface ReviewField {
+  field: string; label: string; value: number | null; source: string | null; source_label: string
+  extraction_id: number | null; status: 'ok' | 'edited' | 'conflict' | 'confirmed' | 'missing'; note: string | null
 }
 export interface InfoItem { type: 'field' | 'document' | 'text'; key?: string; label: string }
 export interface InfoRequest {
@@ -72,9 +82,10 @@ export interface BankExtras {
 }
 export interface ApplicationDetail extends ApplicationSummary {
   steps: string[]
-  company: CompanyInfo
+  company: CompanyInfo | null
+  review: { fields: ReviewField[]; has_conflicts: boolean }
   purpose: string | null; has_collateral: boolean; collateral_note: string | null
-  financials: Financials; contact: { name?: string; phone?: string }
+  financials: Financials; contact: { name?: string; phone?: string; role?: string }
   documents: DocumentItem[]
   required_documents: { kind: string; label: string; uploaded: boolean }[]
   info_requests: InfoRequest[]
@@ -94,3 +105,27 @@ export interface Stats {
 }
 export interface AiStatus { provider: string; is_stub: boolean; requested: string; planned_model: string; features: { key: string; title: string; where: string }[] }
 export interface DemoInn { inn: string; title: string; name: string }
+
+// ── квиз «опишите задачу» ──
+export interface QuizOption { value: string | number; label: string; hint?: string }
+export interface QuizQuestion {
+  turn_id: number; field: string; kind: 'question' | 'clarify' | 'edit'; text: string; hint: string | null; options: QuizOption[]
+  custom?: { placeholder: string } | null; type: 'enum' | 'number'; min?: number | null; max?: number | null
+  source: 'bank' | 'ai'; simulated: boolean
+}
+export interface PortraitItem { field: string; label: string; value: string | number; value_label: string; source: string }
+export interface Suggestion {
+  code: string; name: string; tagline: string; score: number; amount: number; term_months: number; rate_from: number; monthly_payment: number
+  reasons: string[]; caveats: string[]; docs: { kind: string; label: string }[]
+}
+export interface Recommendations {
+  primary: Suggestion | null; alternatives: Suggestion[]; not_suitable: { code: string; name: string; why: string[] }[]; disclaimer: string; note: string
+}
+export interface IntakeSession {
+  id: number; text: string; status: 'questions' | 'ready' | 'applied'; question: QuizQuestion | null
+  known: Record<string, { value: string | number; label: string; source: string }>
+  progress: { done: number; total: number }
+  portrait: { items: PortraitItem[]; summary: string } | null; recommendations: Recommendations | null; application_id: number | null
+  ai: { enabled: boolean; calls_used: number; max_calls: number; simulated?: boolean }
+  history: { field: string; kind: string; question: string; source: string; answer: string | null }[]
+}

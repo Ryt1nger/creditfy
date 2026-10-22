@@ -16,7 +16,7 @@ from ..documents import samples
 from ..documents import service as docs_svc
 from ..models import Application, Company, DocExtraction, Document, Event, InfoRequest, Loan, Notification, User, now
 from ..products import DISCLAIMER, DOC_KINDS, PRODUCTS, REJECT_REASONS
-from ..schemas import (AnswerIn, ApplicationIn, ApplicationPatch, CalcIn, DeclineIn, DecisionIn, DocReviewIn, ExtractionPatch,
+from ..schemas import (AnswerIn, ApplicationIn, ApplicationPatch, CalcIn, DeclineIn, DecisionIn, DocReviewIn, DraftIn, ExtractionPatch,
                        LoginIn, RecommendIn, RequestInfoIn, SignIn)
 from ..security import (bank_only, client_only, create_token, current_user, underwriter_only, verify_password)
 from ..services import offers as offers_svc
@@ -195,6 +195,24 @@ def create_app(body: ApplicationIn, u: User = Depends(client_only), db: Session 
     db.flush()
     a.number = f"АБ-{datetime.now().year}-{a.id:05d}"
     log(db, a, "created", "Черновик заявки создан", actor=u.name)
+    db.commit()
+    return ser.detail(a, u)
+
+
+@router.post("/applications/draft", tags=["client"])
+def create_draft(body: DraftIn, u: User = Depends(client_only), db: Session = Depends(get_db)):
+    """Черновик без компании: клиент выбрал продукт сам (минуя квиз) и оформляет заявку в мастере."""
+    p = PRODUCTS.get(body.product_code)
+    if not p:
+        raise HTTPException(422, "Неизвестный продукт")
+    amount = min(max(body.amount or 2_000_000, p["min_amount"]), p["max_amount"])
+    term = min(max(body.term_months or 24, p["min_term"]), p["max_term"])
+    a = Application(number="tmp-" + uuid.uuid4().hex[:8], owner_id=u.id, company_id=None, product_code=p["code"], amount=amount,
+                    term_months=term, purpose=p["tagline"], financials={}, contact={"name": u.name}, wizard_step=1)
+    db.add(a)
+    db.flush()
+    a.number = f"АБ-{datetime.now().year}-{a.id:05d}"
+    log(db, a, "created", "Черновик заявки создан", f"Продукт: {p['name']}", actor=u.name)
     db.commit()
     return ser.detail(a, u)
 

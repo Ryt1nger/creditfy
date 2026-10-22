@@ -30,7 +30,7 @@ class Financials(BaseModel):
 class Contact(BaseModel):
     name: str | None = Field(default=None, max_length=120)
     phone: str | None = Field(default=None, max_length=30)
-    role: str | None = Field(default=None, max_length=60)
+    role: str | None = Field(default=None, max_length=60)  # owner | director | accountant | employee
 
 
 class ApplicationIn(BaseModel):
@@ -100,3 +100,9 @@ class ExtractionPatch(BaseModel):
     value: int | None = Field(default=None, ge=-10**11, le=10**11)
     confirm: bool = False
     comment: str | None = Field(default=None, max_length=300)
+
+
+class DraftIn(BaseModel):
+    product_code: str
+    amount: int | None = Field(default=None, gt=0, le=100_000_000)
+    term_months: int | None = Field(default=None, gt=0, le=120)

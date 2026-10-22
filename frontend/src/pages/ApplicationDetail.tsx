@@ -80,9 +80,10 @@ export default function ApplicationDetail() {
     <div className="stack lg">
       <div className="row"><button className="btn light sm" onClick={() => nav('/applications')}><IBack size={18} /> Все заявки</button></div>
       <section className="status-hero">
-        <div className="row between wrap"><div><span className="tiny muted">{a.number}</span><h1 style={{ fontSize: 'clamp(26px,3.4vw,38px)', marginTop: 4 }}>{a.product_name}</h1><div className="muted">{a.company.name} · ИНН {a.company.inn}</div></div><div style={{ textAlign: 'right' }}><div className="sum num">{rub(a.amount)}</div><div className="muted small">на {months(a.term_months)}</div></div></div>
+        <div className="row between wrap"><div><span className="tiny muted">{a.number}</span><h1 style={{ fontSize: 'clamp(26px,3.4vw,38px)', marginTop: 4 }}>{a.product_name}</h1><div className="muted">{a.company?.name} · ИНН {a.company?.inn}</div></div><div style={{ textAlign: 'right' }}><div className="sum num">{rub(a.amount)}</div><div className="muted small">на {months(a.term_months)}</div></div></div>
         <Stepper steps={a.steps} current={a.step} status={a.status} running={running} />
         <div className="big"><StatusIcon a={a} /><div className="grow"><div className="row wrap"><h2>{a.status_label}</h2><StatusPill a={a} /></div><p className="muted" style={{ marginTop: 6 }}>{a.hint}</p></div></div>
+        <div className="explain"><div><small>Что происходит</small><p>{a.what}</p></div><div className={a.needs_action ? 'need' : ''}><small>Нужно ли действие от вас</small><p><b>{a.needs_action ? 'Да.' : 'Нет.'}</b> {a.action_text}</p></div></div>
         {a.processing && <div className="callout"><div className="spinner" /><div className="small">Идёт автоматическая проверка — страница обновится сама. Можно не ждать: уведомим в кабинете.</div></div>}
       </section>
 

@@ -38,7 +38,7 @@ def summary(a: Application) -> dict:
         "id": a.id, "number": a.number, "company_name": a.company.name if a.company else "Компания не указана", "product_code": a.product_code,
         "product_name": PRODUCTS[a.product_code]["name"], "amount": a.amount, "term_months": a.term_months,
         **{k: v for k, v in status_info(a.status).items()}, "status_label": status_info(a.status)["label"],
-        "processing": a.processing, "created_at": iso(a.created_at), "updated_at": iso(a.updated_at), "decision": a.decision,
+        "processing": a.processing, "wizard_step": a.wizard_step, "created_at": iso(a.created_at), "updated_at": iso(a.updated_at), "decision": a.decision,
         "offer": {"amount": o.amount, "term_months": o.term_months, "rate": o.rate, "monthly_payment": o.monthly_payment} if o else None,
         "assigned_to": a.assignee.name if a.assignee else None, "risk_grade": a.risk_grade, "score": a.score,
         "route": sc.route if sc else None, "open_requests": sum(1 for r in a.info_requests if r.status == "open"),
@@ -75,7 +75,7 @@ def detail(a: Application, user: User) -> dict:
     expl = get_provider().explain_status_for_client({"fallback": hint})
     d = {
         **summary(a), "steps": CLIENT_STEPS, "company": _company(a), "purpose": a.purpose, "has_collateral": a.has_collateral,
-        "collateral_note": a.collateral_note, "financials": a.financials, "contact": a.contact, "wizard_step": a.wizard_step,
+        "collateral_note": a.collateral_note, "financials": a.financials, "contact": a.contact,
         "documents": [{"id": x.id, "kind": x.kind, "label": DOC_KINDS.get(x.kind, x.kind), "filename": x.filename, "size": x.size,
                        "status": x.status, "review_comment": x.review_comment, "extraction": x.extracted.get("status", "not_available"),
                        "extraction_note": x.extracted.get("note"),

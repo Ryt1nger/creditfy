@@ -4,9 +4,11 @@ import { bki, demoInns, egrul, innValid, pb, SCENARIOS } from './registry'
 import { DISCLAIMER, DOC_KINDS, PRODUCTS, REJECT_REASONS } from './products'
 import { availableCash, dscr, findOffer, rateFor, schedule, annuity, type OfferCalc } from './offers'
 import { scoreApplication } from './scoring'
+import { answerSession, openTurn, recommendFor, sessionDict, startSession, known as sessKnown, optionLabel, type Sess } from './intake'
+import { active as activeEx, dropDocNumbers, editExtraction, hasConflicts, recheck, recognize, reviewFields, type Ex } from './docs'
 
 export class ApiError extends Error { constructor(public status: number, message: string) { super(message) } }
-const KEY = 'creditfy-mock-v3'
+const KEY = 'creditfy-mock-v4'
 const STEP_DELAY = 1100
 
 // ─── машина состояний ───
@@ -33,13 +35,31 @@ const META: Record<string, [string, number, string, string]> = {
   EXPIRED: ['Срок предложения истёк', 3, 'final', 'Оформите новую заявку, если потребность сохраняется.'],
   CANCELLED: ['Заявка отменена', 0, 'final', 'Заявка закрыта.'],
 }
+// что происходит / нужно ли действие клиента (зеркало EXPLAIN в backend/app/services/workflow.py)
+const EXPLAIN: Record<string, [string, string | null]> = {
+  DRAFT: ['Заявка не отправлена: все данные сохраняются, можно вернуться в любой момент.', 'Дойдите до последнего шага и отправьте заявку.'],
+  SUBMITTED: ['Банк получил заявку и ставит её в обработку.', null],
+  COMPLETENESS_CHECK: ['Система проверяет, что все поля и документы заполнены и числа не противоречат друг другу.', null],
+  NEEDS_INFO: ['Банку не хватает данных или нужно уточнить расхождение — обработка приостановлена.', 'Ответьте на запрос банка ниже — после этого проверка продолжится.'],
+  ENRICHMENT: ['Данные о компании сверяются с реестрами и кредитной историей (в демо — симуляторы).', null],
+  SCORING: ['Считается оценка риска и подбираются условия. Оценка — не решение, решение принимают правила банка и специалист.', null],
+  MANUAL_REVIEW: ['Заявку смотрит кредитный специалист, потому что случай выходит за рамки автоматического решения.', null],
+  OFFER_READY: ['Банк подготовил условия. Они действуют ограниченное время.', 'Прочитайте условия и примите или отклоните предложение.'],
+  REJECTED: ['Банк не готов одобрить заявку. Причина указана ниже.', null],
+  SIGNING: ['Договор готов к подписанию (в демо — без реальной подписи).', 'Проверьте договор и подтвердите подписание.'],
+  DISBURSED: ['Договор подписан, деньги зачислены на счёт (в демо — симуляция).', null],
+  DECLINED_BY_CLIENT: ['Вы отказались от предложения, заявка закрыта.', null],
+  EXPIRED: ['Срок действия предложения закончился, заявка закрыта.', null],
+  CANCELLED: ['Заявка отменена и закрыта.', null],
+}
+const FL: Record<string, string> = { revenue_year: 'Выручка за год', net_profit_year: 'Чистая прибыль за год', monthly_turnover: 'Средние поступления на счёт в месяц', monthly_obligations: 'Платежи по кредитам в месяц', purchase_price: 'Стоимость покупки по счёту' }
 const FIELD_LABELS: Record<string, string> = {
   'financials.revenue_year': 'Выручка за последний год, ₽', 'financials.net_profit_year': 'Чистая прибыль за последний год, ₽',
   'financials.monthly_turnover': 'Среднемесячный оборот по счёту, ₽', 'financials.monthly_obligations': 'Ежемесячные платежи по действующим кредитам, ₽',
   'contact.name': 'Контактное лицо', 'contact.phone': 'Телефон для связи', purpose: 'Цель кредита',
 }
 
-interface DB { users: any[]; apps: any[]; notifications: any[]; seq: Record<string, number> }
+interface DB { users: any[]; apps: any[]; notifications: any[]; sessions: Sess[]; seq: Record<string, number> }
 let db: DB
 const listeners = new Set<() => void>()
 const nowIso = () => new Date().toISOString()
@@ -153,8 +173,8 @@ const currentOffer = (a: any) => [...a.offers].reverse().find((o) => o.status ==
 function summary(a: any): ApplicationSummary {
   const [label, step, group, hint] = META[a.status]; const o = currentOffer(a); const sc = a.scores[a.scores.length - 1]
   return {
-    id: a.id, number: a.number, company_name: a.company.name, product_code: a.product_code, product_name: PRODUCTS[a.product_code].name, amount: a.amount, term_months: a.term_months,
-    status: a.status, status_label: label, step, group: group as any, hint, processing: a.processing, created_at: a.created_at, updated_at: a.updated_at, decision: a.decision,
+    id: a.id, number: a.number, company_name: a.company?.name ?? 'Компания не указана', product_code: a.product_code, product_name: PRODUCTS[a.product_code].name, amount: a.amount, term_months: a.term_months,
+    status: a.status, status_label: label, step, group: group as any, hint, what: EXPLAIN[a.status][0], needs_action: EXPLAIN[a.status][1] != null, action_text: EXPLAIN[a.status][1] ?? 'Ничего делать не нужно.', processing: a.processing, wizard_step: a.wizard_step ?? 1, created_at: a.created_at, updated_at: a.updated_at, decision: a.decision,
     offer: o ? { amount: o.amount, term_months: o.term_months, rate: o.rate, monthly_payment: o.monthly_payment } : null,
     assigned_to: a.assigned_to_id ? db.users.find((u) => u.id === a.assigned_to_id)?.name ?? null : null,
     risk_grade: a.risk_grade, score: a.score, route: sc?.route ?? null, open_requests: a.info_requests.filter((r: any) => r.status === 'open').length,
@@ -166,8 +186,8 @@ function detail(a: any, u: Me): ApplicationDetail {
   const have = new Set(a.documents.filter((d: any) => d.status !== 'rejected').map((d: any) => d.kind))
   const need = [...PRODUCTS[a.product_code].docs.map((d) => d.kind), ...(a.has_collateral ? ['collateral_doc'] : [])]
   const d: ApplicationDetail = {
-    ...summary(a), steps: STEPS, company: a.company, purpose: a.purpose, has_collateral: a.has_collateral, collateral_note: a.collateral_note, financials: a.financials, contact: a.contact,
-    documents: a.documents.map((x: any) => ({ id: x.id, kind: x.kind, label: DOC_KINDS[x.kind] ?? x.kind, filename: x.filename, size: x.size, status: x.status, review_comment: x.review_comment, extraction: 'not_available' })),
+    ...summary(a), steps: STEPS, company: a.company ?? null, review: { fields: reviewFields(a) as any, has_conflicts: hasConflicts(a) }, purpose: a.purpose, has_collateral: a.has_collateral, collateral_note: a.collateral_note, financials: a.financials, contact: a.contact,
+    documents: a.documents.map((x: any) => ({ id: x.id, kind: x.kind, label: DOC_KINDS[x.kind] ?? x.kind, filename: x.filename, size: x.size, status: x.status, review_comment: x.review_comment, extraction: x.extracted?.status ?? 'not_available', extraction_note: x.extracted?.note ?? null, extractions: (x.extractions ?? []).map(({ application_id, ...e }: Ex) => ({ ...e, label: FL[e.field] ?? e.field })) })),
     required_documents: need.map((k) => ({ kind: k, label: DOC_KINDS[k], uploaded: have.has(k) })),
     info_requests: a.info_requests, offers: a.offers, events: a.events.filter((e: any) => bank || e.client_visible),
     loan: a.loan, decision_reason: a.decision_reason, ai_explanation: explain(a),
@@ -199,12 +219,13 @@ function aiSummary(a: any, s: any) {
 }
 
 // ─── создание заявки ───
+function companyOf(inn: string) { const e = egrul(inn); if (!e) throw new ApiError(422, 'Некорректный ИНН'); return { inn: e.inn, name: e.name, legal_form: e.legal_form, ogrn: e.ogrn, okved: e.okved, reg_date: e.reg_date, address: e.address, director: e.director, status: e.status, age_months: e.age_months } }
 function newApp(owner: Me, b: any) {
-  const e = egrul(b.company_inn); if (!e) throw new ApiError(422, 'Некорректный ИНН')
+  const e = b.company_inn ? egrul(b.company_inn) : null; if (b.company_inn && !e) throw new ApiError(422, 'Некорректный ИНН')
   const prod = PRODUCTS[b.product_code]; if (!prod) throw new ApiError(422, 'Неизвестный продукт')
   const id = nid('app')
   const a = {
-    id, number: `АБ-${new Date().getFullYear()}-${String(id).padStart(5, '0')}`, owner_id: owner.id, company: { inn: e.inn, name: e.name, legal_form: e.legal_form, ogrn: e.ogrn, okved: e.okved, reg_date: e.reg_date, address: e.address, director: e.director, status: e.status, age_months: e.age_months },
+    id, number: `АБ-${new Date().getFullYear()}-${String(id).padStart(5, '0')}`, owner_id: owner.id, company: e ? companyOf(b.company_inn) : null, wizard_step: b.wizard_step ?? 1,
     product_code: b.product_code, amount: b.amount, term_months: b.term_months, purpose: b.purpose ?? '', has_collateral: !!b.has_collateral, collateral_note: b.collateral_note ?? null,
     financials: b.financials ?? {}, contact: b.contact ?? {}, status: 'DRAFT', resume_to: null, processing: false, assigned_to_id: null as number | null, risk_grade: null as string | null, score: null as number | null, decision: null as string | null, decision_reason: null as string | null, decision_by: null as string | null, submitted_at: null as string | null,
     created_at: nowIso(), updated_at: nowIso(), documents: [] as any[], info_requests: [] as any[], events: [] as any[], enr: null as any, scores: [] as any[], offers: [] as any[], loan: null as any,
@@ -220,7 +241,7 @@ const FIN: Record<string, any> = {
   bad: { revenue_year: 25_000_000, net_profit_year: 900_000, monthly_turnover: 2_000_000, monthly_obligations: 40_000 },
 }
 function seed() {
-  db = { users: [], apps: [], notifications: [], seq: {} }
+  db = { users: [], apps: [], notifications: [], sessions: [], seq: {} }
   const U = (name: string, email: string, role: any) => { const u = { id: nid('usr'), name, email, role }; db.users.push(u); return u }
   const c1 = U('Иван Соколов', 'ivan@demo.ru', 'client'), c2 = U('Андрей Волков', 'volkov@demo.ru', 'client'), c3 = U('Мария Пекарева', 'maria@demo.ru', 'client')
   const op = U('Елена Крылова', 'operator@demo.ru', 'operator'), uw = U('Дмитрий Орлов', 'risk@demo.ru', 'underwriter')
@@ -291,29 +312,73 @@ R('POST', '/products/recommend', (c) => {
   return { source: 'stub', is_stub: true, items }
 })
 R('POST', '/calculator', (c) => { need(c); const { product_code, amount, term_months, has_collateral } = c.body; const p = PRODUCTS[product_code]; const r = rateFor(product_code, 'B', !!has_collateral) - 1.5; const pay = annuity(amount, term_months, r); return { rate_from: r, monthly_payment: Math.round(pay), total_payment: Math.round(pay * term_months), fee: Math.round((amount * p.fee_pct) / 100) } })
-R('GET', '/ai/status', () => ({ provider: 'stub', is_stub: true, requested: 'stub', planned_model: 'DeepSeek (open weights, локальный запуск)', features: [
-  { key: 'recommend', title: 'Подбор продукта по описанию задачи', where: 'клиент · шаг 1 заявки' }, { key: 'summary', title: 'Сводка по заявке для кредитного специалиста', where: 'банк · карточка заявки' },
-  { key: 'explain', title: 'Понятное объяснение статуса и решения', where: 'клиент · карточка заявки' }, { key: 'extract', title: 'Распознавание загруженных документов', where: 'клиент и банк · документы' }] }))
+R('GET', '/ai/status', () => ({ provider: 'stub', is_stub: true, llm_enabled: false, requested: 'rules', planned_model: 'DeepSeek-R1 (открытые веса, локально через Ollama)', model: 'deepseek-r1:1.5b', max_calls: 3, timeout: 8, features: [
+  { key: 'intake', title: 'Формулировка вопросов квиза и один уточняющий вопрос', where: 'клиент · «Опишите задачу» (в демо-режиме — имитация)' }, { key: 'parse', title: 'Подстраховка разбора свободного текста', where: 'клиент · «Опишите задачу»' },
+  { key: 'extract', title: 'Запасной разбор документа, если парсер не нашёл чисел', where: 'клиент · документы' }] }))
+
+// ─── квиз ───
+function getSess(c: Ctx, id: string) { const u = need(c); const s = db.sessions.find((x) => x.id === Number(id)); if (!s || s.owner_id !== u.id) throw new ApiError(404, 'Сессия не найдена'); return { s, u } }
+R('POST', '/intake/start', (c) => { const u = need(c); if (u.role !== 'client') throw new ApiError(403, 'Доступно клиенту'); const s = startSession(nid('ses'), u.id, String(c.body.text ?? '').slice(0, 1000)); db.sessions.push(s); save(); return sessionDict(s) })
+R('GET', '/intake/:id', (c) => sessionDict(getSess(c, c.m[1]).s))
+R('POST', '/intake/:id/answer', (c) => { const { s } = getSess(c, c.m[1]); try { answerSession(s, c.body.field, c.body.value) } catch (e) { throw new ApiError(422, (e as Error).message) } save(); return sessionDict(s) })
+R('POST', '/intake/:id/recommend', (c) => { const { s } = getSess(c, c.m[1]); if (s.status === 'questions') throw new ApiError(409, 'Сначала ответьте на вопросы'); s.recommendations = recommendFor(s); save(); return sessionDict(s) })
+R('POST', '/intake/:id/application', (c) => {
+  const { s, u } = getSess(c, c.m[1]); const p = PRODUCTS[c.body.product_code]; if (!p) throw new ApiError(422, 'Неизвестный продукт'); if (s.status === 'questions') throw new ApiError(409, 'Сначала ответьте на вопросы')
+  const existing = s.application_id ? db.apps.find((a) => a.id === s.application_id) : null
+  if (existing && existing.status === 'DRAFT') {
+    if (existing.product_code !== p.code) { existing.product_code = p.code; existing.amount = Math.min(Math.max(existing.amount, p.min_amount), p.max_amount); existing.term_months = Math.min(Math.max(existing.term_months, p.min_term), p.max_term); existing.has_collateral = existing.has_collateral && p.allows_collateral; log(existing, 'product', `Выбран продукт: ${p.name}`, null, u.name); save() }
+    return detail(existing, u)
+  }
+  const v = sessKnown(s), clamp = (x: number, lo: number, hi: number) => Math.min(Math.max(x, lo), hi)
+  const a = newApp(u, { product_code: p.code, amount: clamp(v.amount ?? p.min_amount, p.min_amount, p.max_amount), term_months: clamp(v.term ?? p.max_term, p.min_term, p.max_term), purpose: (s.text || (v.goal ? optionLabel('goal', v.goal) : p.tagline)).slice(0, 1000), has_collateral: v.collateral === 'yes' && p.allows_collateral, contact: { name: u.name } })
+  s.application_id = a.id; s.status = 'applied'; save(); return detail(a, u)
+})
+R('GET', '/demo/documents/:inn', (c) => { if (!innValid(c.m[1])) throw new ApiError(422, 'Некорректный ИНН'); const conflict = Object.values(SCENARIOS).some((p) => p.inn === c.m[1] && p.title.toLowerCase().includes('пограничн')); return Object.entries(DOC_KINDS).map(([kind, label]) => ({ kind, label, formats: kind === 'bank_statement' ? ['xlsx', 'csv', 'pdf'] : kind === 'tax_return' ? ['pdf', 'xlsx'] : ['pdf'], conflict: conflict && kind === 'bank_statement' })) })
+
 
 R('GET', '/applications', (c) => { const u = need(c); db.apps.forEach(expire); return db.apps.filter((a) => a.owner_id === u.id).sort((x, y) => y.id - x.id).map(summary) })
 R('POST', '/applications', (c) => { const u = need(c); if (u.role !== 'client') throw new ApiError(403, 'Заявку подаёт клиент'); const a = newApp(u, c.body); save(); return detail(a, u) })
 R('GET', '/applications/:id', (c) => { const { a, u } = getApp(c, c.m[1]); return detail(a, u) })
 R('PATCH', '/applications/:id', (c) => {
   const { a, u } = getApp(c, c.m[1]); if (!['DRAFT', 'NEEDS_INFO'].includes(a.status)) throw new ApiError(409, 'Заявку уже нельзя менять')
-  const b = c.body; for (const k of ['amount', 'term_months', 'purpose', 'has_collateral', 'collateral_note', 'product_code']) if (k in b) a[k] = b[k]
-  if (b.financials) a.financials = { ...a.financials, ...b.financials }; if (b.contact) a.contact = { ...a.contact, ...b.contact }
-  if (b.company_inn && b.company_inn !== a.company.inn) { const e = egrul(b.company_inn); if (!e) throw new ApiError(422, 'Некорректный ИНН'); a.company = { inn: e.inn, name: e.name, legal_form: e.legal_form, ogrn: e.ogrn, okved: e.okved, reg_date: e.reg_date, address: e.address, director: e.director, status: e.status, age_months: e.age_months } }
+  const b = c.body; const p = PRODUCTS[b.product_code ?? a.product_code]; if (!p) throw new ApiError(422, 'Неизвестный продукт')
+  const amount = b.amount ?? a.amount, term = b.term_months ?? a.term_months
+  if (amount < p.min_amount || amount > p.max_amount) throw new ApiError(422, `Сумма для этого продукта: ${p.min_amount}–${p.max_amount} ₽`)
+  if (term < p.min_term || term > p.max_term) throw new ApiError(422, `Срок для этого продукта: ${p.min_term}–${p.max_term} мес.`)
+  for (const k of ['amount', 'term_months', 'purpose', 'has_collateral', 'collateral_note', 'product_code', 'wizard_step']) if (k in b) a[k] = b[k]
+  if (b.financials) a.financials = { ...a.financials, ...Object.fromEntries(Object.entries<any>(b.financials).filter(([, v]) => v != null)) }
+  if (b.contact) a.contact = { ...a.contact, ...Object.fromEntries(Object.entries<any>(b.contact).filter(([, v]) => v != null)) }
+  if (b.company_inn && b.company_inn !== a.company?.inn) a.company = companyOf(b.company_inn)
   a.updated_at = nowIso(); save(); return detail(a, u)
+})
+R('POST', '/applications/draft', (c) => {
+  const u = need(c); if (u.role !== 'client') throw new ApiError(403, 'Заявку подаёт клиент'); const p = PRODUCTS[c.body.product_code]; if (!p) throw new ApiError(422, 'Неизвестный продукт')
+  const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi)
+  const a = newApp(u, { product_code: p.code, amount: clamp(c.body.amount ?? 2_000_000, p.min_amount, p.max_amount), term_months: clamp(c.body.term_months ?? 24, p.min_term, p.max_term), purpose: p.tagline, contact: { name: u.name } })
+  save(); return detail(a, u)
 })
 R('POST', '/applications/:id/documents', (c) => {
   const { a, u } = getApp(c, c.m[1]); if (!['DRAFT', 'NEEDS_INFO'].includes(a.status)) throw new ApiError(409, 'Документы нельзя добавить на этом этапе')
   const { kind, filename, size } = c.body; if (!DOC_KINDS[kind]) throw new ApiError(422, 'Неизвестный тип документа'); if (size > 5 * 1024 * 1024) throw new ApiError(413, 'Файл больше 5 МБ')
-  a.documents = a.documents.filter((d: any) => !(d.kind === kind && d.status === 'rejected')); a.documents.push({ id: nid('doc'), kind, filename, size, status: 'uploaded', review_comment: null })
-  log(a, 'document', `Загружен документ: ${DOC_KINDS[kind]}`, filename, u.name); save(); return detail(a, u)
+  for (const d of a.documents.filter((d: any) => d.kind === kind && (d.status === 'rejected' || a.status === 'DRAFT'))) dropDocNumbers(a, d)
+  a.documents = a.documents.filter((d: any) => !(d.kind === kind && (d.status === 'rejected' || a.status === 'DRAFT')))
+  const r = recognize(kind, filename, a.company?.inn ?? '', a.amount, () => nid('ext'), a.id)
+  a.documents.push({ id: nid('doc'), kind, filename, size, status: 'uploaded', review_comment: null, extracted: { status: r.status, method: 'mock', note: r.note }, extractions: r.items })
+  for (const x of r.items) if (x.field in FINK) a.financials = { ...a.financials, [x.field]: x.value }
+  recheck(a)
+  log(a, 'document', `Загружен документ: ${DOC_KINDS[kind]}`, `${filename} · ${r.note}`, u.name); save(); return detail(a, u)
 })
-R('DELETE', '/applications/:id/documents/:doc', (c) => { const { a, u } = getApp(c, c.m[1]); if (!['DRAFT', 'NEEDS_INFO'].includes(a.status)) throw new ApiError(409, 'Нельзя удалить документ на этом этапе'); a.documents = a.documents.filter((d: any) => d.id !== Number(c.m[2])); save(); return detail(a, u) })
+const FINK: Record<string, 1> = { revenue_year: 1, net_profit_year: 1, monthly_turnover: 1, monthly_obligations: 1 }
+R('PATCH', '/extractions/:id', (c) => {
+  const u = need(c); const x = db.apps.flatMap((a) => a.documents.flatMap((d: any) => (d.extractions ?? []).map((e: Ex) => ({ a, e })))).find((r: any) => r.e.id === Number(c.m[1]))
+  if (!x || x.a.owner_id !== u.id) throw new ApiError(404, 'Значение не найдено'); if (!['DRAFT', 'NEEDS_INFO'].includes(x.a.status)) throw new ApiError(409, 'Заявку уже нельзя менять')
+  editExtraction(x.a, x.e, c.body.value, !!c.body.confirm); if (c.body.confirm) log(x.a, 'confirm', 'Клиент подтвердил данные с расхождением', c.body.comment ?? null, u.name)
+  x.a.updated_at = nowIso(); save(); return detail(x.a, u)
+})
+R('DELETE', '/applications/:id/documents/:doc', (c) => { const { a, u } = getApp(c, c.m[1]); if (!['DRAFT', 'NEEDS_INFO'].includes(a.status)) throw new ApiError(409, 'Нельзя удалить документ на этом этапе'); const gone = a.documents.find((d: any) => d.id === Number(c.m[2])); if (gone) dropDocNumbers(a, gone); a.documents = a.documents.filter((d: any) => d.id !== Number(c.m[2])); recheck(a); save(); return detail(a, u) })
 R('POST', '/applications/:id/submit', (c) => {
   const { a, u } = getApp(c, c.m[1]); if (a.status !== 'DRAFT') throw new ApiError(409, 'Заявка уже отправлена')
+  if (!a.company) throw new ApiError(422, 'Укажите компанию по ИНН'); if (hasConflicts(a)) throw new ApiError(422, 'Есть данные с пометкой «Требует проверки» — исправьте или подтвердите их')
   go(a, 'SUBMITTED', 'Заявка отправлена в банк', null, u.name); a.submitted_at = nowIso(); void launch(a); return detail(a, u)
 })
 R('POST', '/applications/:id/info-requests/:rid/answer', (c) => {

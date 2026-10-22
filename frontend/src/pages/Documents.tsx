@@ -10,7 +10,7 @@ function AppDocs({ id, number, product }: { id: number; number: string; product:
   if (!data) return <Loading h={90} />
   return (
     <section className="wcard" style={{ gap: 14 }}>
-      <div className="row between wrap"><h2 style={{ fontSize: 22 }}>{product} · {number}</h2><Link className="btn white2 sm" to={data.status === 'DRAFT' ? `/apply?draft=${id}` : `/applications/${id}`}>Открыть заявку</Link></div>
+      <div className="row between wrap"><h2 style={{ fontSize: 22 }}>{product} · {number}</h2><Link className="btn white2 sm" to={data.status === 'DRAFT' ? `/apply/${id}` : `/applications/${id}`}>Открыть заявку</Link></div>
       {data.required_documents.length === 0 && <p className="muted">Для этой заявки документы не требуются.</p>}
       {data.required_documents.map((rd) => { const d = data.documents.find((x) => x.kind === rd.kind)
         return (
