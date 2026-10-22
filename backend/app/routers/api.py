@@ -192,14 +192,14 @@ def patch_app(app_id: int, body: ApplicationPatch, u: User = Depends(client_only
     code, amount, term = data.get("product_code", a.product_code), data.get("amount", a.amount), data.get("term_months", a.term_months)
     _limits(code, amount, term)
     a.product_code, a.amount, a.term_months = code, amount, term
-    for k in ("purpose", "has_collateral", "collateral_note"):
+    for k in ("purpose", "has_collateral", "collateral_note", "wizard_step"):
         if k in data:
             setattr(a, k, data[k])
     if "financials" in data and data["financials"] is not None:
         a.financials = {**a.financials, **{k: v for k, v in data["financials"].items() if v is not None}}
     if "contact" in data and data["contact"] is not None:
         a.contact = {**a.contact, **{k: v for k, v in data["contact"].items() if v is not None}}
-    if data.get("company_inn") and data["company_inn"] != a.company.inn:
+    if data.get("company_inn") and (a.company is None or data["company_inn"] != a.company.inn):
         a.company_id = _set_company(db, u, data["company_inn"]).id
         db.flush()
         db.refresh(a)

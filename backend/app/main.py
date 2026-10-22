@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
 from .db import Base, SessionLocal, engine
 from .routers.api import router
+from .routers.intake import router as intake_router
 
 logging.basicConfig(level=logging.INFO)
 
@@ -32,3 +33,4 @@ app = FastAPI(
 )
 app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins, allow_methods=["*"], allow_headers=["*"])
 app.include_router(router)
+app.include_router(intake_router)

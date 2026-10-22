@@ -73,7 +73,7 @@ def detail(a: Application, user: User) -> dict:
     expl = get_provider().explain_status_for_client({"fallback": hint})
     d = {
         **summary(a), "steps": CLIENT_STEPS, "company": _company(a), "purpose": a.purpose, "has_collateral": a.has_collateral,
-        "collateral_note": a.collateral_note, "financials": a.financials, "contact": a.contact,
+        "collateral_note": a.collateral_note, "financials": a.financials, "contact": a.contact, "wizard_step": a.wizard_step,
         "documents": [{"id": x.id, "kind": x.kind, "label": DOC_KINDS.get(x.kind, x.kind), "filename": x.filename, "size": x.size,
                        "status": x.status, "review_comment": x.review_comment, "extraction": x.extracted.get("status", "not_available")} for x in a.documents],
         "required_documents": [{"kind": k, "label": DOC_KINDS[k], "uploaded": k in have} for k in need],

@@ -55,6 +55,7 @@ class ApplicationPatch(BaseModel):
     collateral_note: str | None = Field(default=None, max_length=300)
     financials: Financials | None = None
     contact: Contact | None = None
+    wizard_step: int | None = Field(default=None, ge=1, le=5)
 
 
 class AnswerIn(BaseModel):
