@@ -1,0 +1,1153 @@
+{
+ "info": {
+  "name": "Кредитный кабинет предпринимателя (демо)",
+  "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+  "description": "1) POST /api/auth/login, 2) положите token в переменную {{token}}. Пароль демо-пользователей: demo123."
+ },
+ "variable": [
+  {
+   "key": "base",
+   "value": "http://localhost:8000"
+  },
+  {
+   "key": "token",
+   "value": ""
+  }
+ ],
+ "item": [
+  {
+   "name": "service",
+   "item": [
+    {
+     "name": "GET /api/health",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/health",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "health"
+       ]
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "auth",
+   "item": [
+    {
+     "name": "POST /api/auth/login",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/auth/login",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "auth",
+        "login"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\"email\": \"ivan@demo.ru\", \"password\": \"demo123\"}"
+      }
+     }
+    },
+    {
+     "name": "GET /api/auth/demo-accounts",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/auth/demo-accounts",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "auth",
+        "demo-accounts"
+       ]
+      }
+     }
+    },
+    {
+     "name": "GET /api/me",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/me",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "me"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "catalog",
+   "item": [
+    {
+     "name": "GET /api/products",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/products",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "products"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "GET /api/demo/inns",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/demo/inns",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "demo",
+        "inns"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "GET /api/companies/lookup/{inn}",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/companies/lookup/{inn}",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "companies",
+        "lookup",
+        "{inn}"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "POST /api/products/recommend",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/products/recommend",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "products",
+        "recommend"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{}"
+      }
+     }
+    },
+    {
+     "name": "POST /api/calculator",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/calculator",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "calculator"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{}"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "ai",
+   "item": [
+    {
+     "name": "GET /api/ai/status",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/ai/status",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "ai",
+        "status"
+       ]
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "client",
+   "item": [
+    {
+     "name": "GET /api/applications",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/applications",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "applications"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "POST /api/applications",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/applications",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "applications"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{}"
+      }
+     }
+    },
+    {
+     "name": "GET /api/applications/{app_id}",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/applications/{app_id}",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "applications",
+        "{app_id}"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "PATCH /api/applications/{app_id}",
+     "request": {
+      "method": "PATCH",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/applications/{app_id}",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "applications",
+        "{app_id}"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{}"
+      }
+     }
+    },
+    {
+     "name": "POST /api/applications/{app_id}/documents",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/applications/{app_id}/documents",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "applications",
+        "{app_id}",
+        "documents"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "DELETE /api/applications/{app_id}/documents/{doc_id}",
+     "request": {
+      "method": "DELETE",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/applications/{app_id}/documents/{doc_id}",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "applications",
+        "{app_id}",
+        "documents",
+        "{doc_id}"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "POST /api/applications/{app_id}/submit",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/applications/{app_id}/submit",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "applications",
+        "{app_id}",
+        "submit"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{}"
+      }
+     }
+    },
+    {
+     "name": "POST /api/applications/{app_id}/info-requests/{rid}/answer",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/applications/{app_id}/info-requests/{rid}/answer",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "applications",
+        "{app_id}",
+        "info-requests",
+        "{rid}",
+        "answer"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{}"
+      }
+     }
+    },
+    {
+     "name": "POST /api/applications/{app_id}/offer/accept",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/applications/{app_id}/offer/accept",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "applications",
+        "{app_id}",
+        "offer",
+        "accept"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{}"
+      }
+     }
+    },
+    {
+     "name": "POST /api/applications/{app_id}/offer/decline",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/applications/{app_id}/offer/decline",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "applications",
+        "{app_id}",
+        "offer",
+        "decline"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{}"
+      }
+     }
+    },
+    {
+     "name": "POST /api/applications/{app_id}/sign",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/applications/{app_id}/sign",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "applications",
+        "{app_id}",
+        "sign"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{}"
+      }
+     }
+    },
+    {
+     "name": "POST /api/applications/{app_id}/cancel",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/applications/{app_id}/cancel",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "applications",
+        "{app_id}",
+        "cancel"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{}"
+      }
+     }
+    },
+    {
+     "name": "GET /api/notifications",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/notifications",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "notifications"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "POST /api/notifications/read-all",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/notifications/read-all",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "notifications",
+        "read-all"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{}"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "bank",
+   "item": [
+    {
+     "name": "GET /api/bank/applications",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/bank/applications",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "bank",
+        "applications"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "GET /api/bank/applications/{app_id}",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/bank/applications/{app_id}",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "bank",
+        "applications",
+        "{app_id}"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "POST /api/bank/applications/{app_id}/take",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/bank/applications/{app_id}/take",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "bank",
+        "applications",
+        "{app_id}",
+        "take"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{}"
+      }
+     }
+    },
+    {
+     "name": "POST /api/bank/applications/{app_id}/documents/{doc_id}/review",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/bank/applications/{app_id}/documents/{doc_id}/review",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "bank",
+        "applications",
+        "{app_id}",
+        "documents",
+        "{doc_id}",
+        "review"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{}"
+      }
+     }
+    },
+    {
+     "name": "POST /api/bank/applications/{app_id}/request-info",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/bank/applications/{app_id}/request-info",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "bank",
+        "applications",
+        "{app_id}",
+        "request-info"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{}"
+      }
+     }
+    },
+    {
+     "name": "POST /api/bank/applications/{app_id}/rescore",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/bank/applications/{app_id}/rescore",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "bank",
+        "applications",
+        "{app_id}",
+        "rescore"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{}"
+      }
+     }
+    },
+    {
+     "name": "POST /api/bank/applications/{app_id}/decision",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/bank/applications/{app_id}/decision",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "bank",
+        "applications",
+        "{app_id}",
+        "decision"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{}"
+      }
+     }
+    },
+    {
+     "name": "GET /api/bank/stats",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/bank/stats",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "bank",
+        "stats"
+       ]
+      },
+      "auth": {
+       "type": "bearer",
+       "bearer": [
+        {
+         "key": "token",
+         "value": "{{token}}",
+         "type": "string"
+        }
+       ]
+      }
+     }
+    }
+   ]
+  }
+ ]
+}

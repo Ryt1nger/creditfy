@@ -1,0 +1,40 @@
+# Запуск: docker compose up --build   →   http://localhost:8080
+services:
+  db:
+    image: postgres:16.4-alpine
+    environment:
+      POSTGRES_USER: creditfy
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-creditfy-demo-password}
+      POSTGRES_DB: creditfy
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U creditfy"]
+      interval: 3s
+      retries: 20
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://creditfy:${POSTGRES_PASSWORD:-creditfy-demo-password}@db:5432/creditfy
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-a-long-random-string-0123456789}
+      PIPELINE_STEP_DELAY: ${PIPELINE_STEP_DELAY:-0.9}
+      LLM_PROVIDER: ${LLM_PROVIDER:-stub}
+      SEED_DEMO: "1"
+      UPLOAD_DIR: /data/uploads
+      CORS_ORIGINS: http://localhost:8080
+    volumes: [uploads:/data/uploads]
+    depends_on:
+      db: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 5s
+      retries: 20
+  frontend:
+    build:
+      context: ./frontend
+      args: { VITE_API_MODE: live }
+    ports: ["8080:80"]
+    depends_on:
+      backend: { condition: service_healthy }
+volumes:
+  pgdata:
+  uploads:

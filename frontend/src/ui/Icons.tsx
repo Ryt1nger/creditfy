@@ -1,0 +1,32 @@
+import type { JSX, SVGProps } from 'react'
+const I = (d: string | JSX.Element, fill = false) => ({ size = 24, ...p }: SVGProps<SVGSVGElement> & { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={fill ? 'currentColor' : 'none'} stroke={fill ? 'none' : 'currentColor'} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden {...p}>
+    {typeof d === 'string' ? <path d={d} /> : d}
+  </svg>
+)
+export const IBell = I('M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8M10.3 20a2 2 0 0 0 3.4 0')
+export const ICheck = I('M20 6 9 17l-5-5')
+export const IArrow = I('M5 12h14M13 6l6 6-6 6')
+export const IBack = I('M19 12H5M11 6l-6 6 6 6')
+export const IPlus = I('M12 5v14M5 12h14')
+export const IClock = I(<><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>)
+export const IDoc = I(<><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5M9 13h6M9 17h6" /></>)
+export const IUpload = I('M12 16V4m0 0L7 9m5-5 5 5M4 20h16')
+export const ISearch = I(<><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></>)
+export const IShield = I(<><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z" /><path d="m9 12 2 2 4-4" /></>)
+export const ICoins = I(<><circle cx="9" cy="9" r="6" /><path d="M18.1 10.4A6 6 0 1 1 10.4 18.1M7 6.8h2.4a1.4 1.4 0 0 1 0 2.8H8.6a1.4 1.4 0 0 0 0 2.8H11" /></>)
+export const IWrench = I('M14.7 6.3a4 4 0 0 0 5 5L21 14l-7 7-3-3 7-7zM3 21l6-6')
+export const ITruck = I(<><path d="M2 6h11v10H2zM13 9h4l4 4v3h-8" /><circle cx="6.5" cy="17.5" r="2" /><circle cx="17.5" cy="17.5" r="2" /></>)
+export const IBuild = I(<><path d="M4 21V5l8-3v19M12 9l8 3v9M2 21h20M8 8h1M8 12h1M8 16h1" /></>)
+export const IBolt = I('M13 2 4 14h7l-1 8 9-12h-7z')
+export const IInfo = I(<><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8h.01" /></>)
+export const IWarn = I(<><path d="M12 3 2 20h20z" /><path d="M12 10v4M12 17h.01" /></>)
+export const IX = I('M18 6 6 18M6 6l12 12')
+export const ISpark = I('M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z')
+export const IUser = I(<><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></>)
+export const IList = I('M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01')
+export const IChart = I('M4 20V10M10 20V4M16 20v-8M22 20H2')
+export const IPen = I('M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z')
+export const ITrash = I('M3 6h18M8 6V4h8v2m-9 0 1 14h8l1-14')
+export const ILock = I(<><rect x="4" y="10" width="16" height="11" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></>)
+export const IUsers = I(<><circle cx="9" cy="8" r="3.5" /><path d="M2 20a7 7 0 0 1 14 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14a7 7 0 0 1 4 6" /></>)
