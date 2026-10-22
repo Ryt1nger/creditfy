@@ -2,7 +2,7 @@
  "openapi": "3.1.0",
  "info": {
   "title": "Кредитный кабинет предпринимателя — API (демо-прототип)",
-  "description": "Сквозной кредитный путь малого бизнеса: заявка → проверки → скоринг → решение → договор → выдача. Все данные синтетические.",
+  "description": "Сквозной кредитный путь малого бизнеса: квиз → подбор → заявка → документы → проверки → скоринг → решение → договор → выдача. Все данные синтетические; условия продуктов демонстрационные.",
   "version": "0.1.0"
  },
  "paths": {
@@ -153,6 +153,106 @@
       "HTTPBearer": []
      }
     ]
+   }
+  },
+  "/api/demo/documents/{inn}": {
+   "get": {
+    "tags": [
+     "catalog"
+    ],
+    "summary": "Demo Documents",
+    "description": "Какие синтетические документы можно скачать для ИНН (для прохождения сценария без своих файлов).",
+    "operationId": "demo_documents_api_demo_documents__inn__get",
+    "parameters": [
+     {
+      "name": "inn",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Inn"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/demo/documents/{inn}/{kind}.{fmt}": {
+   "get": {
+    "tags": [
+     "catalog"
+    ],
+    "summary": "Demo Document File",
+    "description": "Синтетический документ (данные выдуманы, помечены как демо). Без авторизации: персональных данных нет.",
+    "operationId": "demo_document_file_api_demo_documents__inn___kind___fmt__get",
+    "parameters": [
+     {
+      "name": "inn",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Inn"
+      }
+     },
+     {
+      "name": "kind",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Kind"
+      }
+     },
+     {
+      "name": "fmt",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Fmt"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
    }
   },
   "/api/companies/lookup/{inn}": {
@@ -341,6 +441,51 @@
       "application/json": {
        "schema": {
         "$ref": "#/components/schemas/ApplicationIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/api/applications/draft": {
+   "post": {
+    "tags": [
+     "client"
+    ],
+    "summary": "Create Draft",
+    "description": "Черновик без компании: клиент выбрал продукт сам (минуя квиз) и оформляет заявку в мастере.",
+    "operationId": "create_draft_api_applications_draft_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DraftIn"
        }
       }
      },
@@ -580,6 +725,62 @@
     }
    }
   },
+  "/api/extractions/{ext_id}": {
+   "patch": {
+    "tags": [
+     "client"
+    ],
+    "summary": "Patch Extraction",
+    "description": "Клиент правит значение, распознанное из документа, или подтверждает расхождение.",
+    "operationId": "patch_extraction_api_extractions__ext_id__patch",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "ext_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Ext Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ExtractionPatch"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
   "/api/applications/{app_id}/submit": {
    "post": {
     "tags": [
@@ -662,7 +863,7 @@
      "content": {
       "application/json": {
        "schema": {
-        "$ref": "#/components/schemas/AnswerIn"
+        "$ref": "#/components/schemas/app__schemas__AnswerIn"
        }
       }
      }
@@ -1332,49 +1533,255 @@
      }
     ]
    }
+  },
+  "/api/intake/start": {
+   "post": {
+    "tags": [
+     "intake"
+    ],
+    "summary": "Start",
+    "operationId": "start_api_intake_start_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/StartIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
+  "/api/intake/{sid}": {
+   "get": {
+    "tags": [
+     "intake"
+    ],
+    "summary": "Get",
+    "operationId": "get_api_intake__sid__get",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "sid",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Sid"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/intake/{sid}/answer": {
+   "post": {
+    "tags": [
+     "intake"
+    ],
+    "summary": "Answer",
+    "operationId": "answer_api_intake__sid__answer_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "sid",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Sid"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/app__routers__intake__AnswerIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/intake/{sid}/recommend": {
+   "post": {
+    "tags": [
+     "intake"
+    ],
+    "summary": "Recommend",
+    "operationId": "recommend_api_intake__sid__recommend_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "sid",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Sid"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/intake/{sid}/application": {
+   "post": {
+    "tags": [
+     "intake"
+    ],
+    "summary": "Create Application",
+    "description": "Черновик заявки из сессии: сумма, срок, цель и залог переносятся, повторно вводить не нужно.",
+    "operationId": "create_application_api_intake__sid__application_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "sid",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Sid"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ApplyIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
   }
  },
  "components": {
   "schemas": {
-   "AnswerIn": {
-    "properties": {
-     "answer": {
-      "anyOf": [
-       {
-        "type": "string",
-        "maxLength": 2000
-       },
-       {
-        "type": "null"
-       }
-      ],
-      "title": "Answer"
-     },
-     "fields": {
-      "additionalProperties": {
-       "anyOf": [
-        {
-         "type": "string"
-        },
-        {
-         "type": "integer"
-        },
-        {
-         "type": "number"
-        },
-        {
-         "type": "null"
-        }
-       ]
-      },
-      "type": "object",
-      "title": "Fields",
-      "default": {}
-     }
-    },
-    "type": "object",
-    "title": "AnswerIn"
-   },
    "ApplicationIn": {
     "properties": {
      "company_inn": {
@@ -1548,10 +1955,36 @@
         "type": "null"
        }
       ]
+     },
+     "wizard_step": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "maximum": 5.0,
+        "minimum": 1.0
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Wizard Step"
      }
     },
     "type": "object",
     "title": "ApplicationPatch"
+   },
+   "ApplyIn": {
+    "properties": {
+     "product_code": {
+      "type": "string",
+      "title": "Product Code"
+     }
+    },
+    "type": "object",
+    "required": [
+     "product_code"
+    ],
+    "title": "ApplyIn"
    },
    "Body_upload_doc_api_applications__app_id__documents_post": {
     "properties": {
@@ -1629,6 +2062,18 @@
        }
       ],
       "title": "Phone"
+     },
+     "role": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 60
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Role"
      }
     },
     "type": "object",
@@ -1756,6 +2201,81 @@
      "status"
     ],
     "title": "DocReviewIn"
+   },
+   "DraftIn": {
+    "properties": {
+     "product_code": {
+      "type": "string",
+      "title": "Product Code"
+     },
+     "amount": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "maximum": 100000000.0,
+        "exclusiveMinimum": 0.0
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Amount"
+     },
+     "term_months": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "maximum": 120.0,
+        "exclusiveMinimum": 0.0
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Term Months"
+     }
+    },
+    "type": "object",
+    "required": [
+     "product_code"
+    ],
+    "title": "DraftIn"
+   },
+   "ExtractionPatch": {
+    "properties": {
+     "value": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "maximum": 100000000000.0,
+        "minimum": -100000000000.0
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Value"
+     },
+     "confirm": {
+      "type": "boolean",
+      "title": "Confirm",
+      "default": false
+     },
+     "comment": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 300
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Comment"
+     }
+    },
+    "type": "object",
+    "title": "ExtractionPatch"
    },
    "Financials": {
     "properties": {
@@ -1941,6 +2461,18 @@
     ],
     "title": "SignIn"
    },
+   "StartIn": {
+    "properties": {
+     "text": {
+      "type": "string",
+      "maxLength": 1000,
+      "title": "Text",
+      "default": ""
+     }
+    },
+    "type": "object",
+    "title": "StartIn"
+   },
    "ValidationError": {
     "properties": {
      "loc": {
@@ -1980,6 +2512,73 @@
      "type"
     ],
     "title": "ValidationError"
+   },
+   "app__routers__intake__AnswerIn": {
+    "properties": {
+     "field": {
+      "type": "string",
+      "title": "Field"
+     },
+     "value": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "integer"
+       },
+       {
+        "type": "number"
+       }
+      ],
+      "title": "Value"
+     }
+    },
+    "type": "object",
+    "required": [
+     "field",
+     "value"
+    ],
+    "title": "AnswerIn"
+   },
+   "app__schemas__AnswerIn": {
+    "properties": {
+     "answer": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 2000
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Answer"
+     },
+     "fields": {
+      "additionalProperties": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "integer"
+        },
+        {
+         "type": "number"
+        },
+        {
+         "type": "null"
+        }
+       ]
+      },
+      "type": "object",
+      "title": "Fields",
+      "default": {}
+     }
+    },
+    "type": "object",
+    "title": "AnswerIn"
    }
   },
   "securitySchemes": {

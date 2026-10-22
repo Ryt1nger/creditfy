@@ -106,3 +106,13 @@ def test_catalog_loaded_and_frontend_copy_in_sync(client):
     if fe.exists():
         for name in ("products.json", "fields.json"):
             assert json.loads((fe / name).read_text()) == json.loads((DATA_DIR / name).read_text()), name
+
+
+def test_openapi_file_in_sync_with_app(client):
+    """docs/openapi.json выгружается скриптом scripts/export_docs.py — тест ловит забытую выгрузку."""
+    from pathlib import Path
+
+    from app.main import app
+    f = Path(__file__).resolve().parents[2] / "docs" / "openapi.json"
+    if f.exists():
+        assert set(json.loads(f.read_text())["paths"]) == set(app.openapi()["paths"]), "запустите: PYTHONPATH=. python scripts/export_docs.py"

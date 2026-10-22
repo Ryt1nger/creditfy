@@ -2,24 +2,14 @@
  "info": {
   "name": "Кредитный кабинет предпринимателя (демо)",
   "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-  "description": "1) POST /api/auth/login, 2) положите token в переменную {{token}}. Пароль демо-пользователей: demo123."
+  "description": "1) POST /api/auth/login, 2) положите token в переменную {{token}}. Пароль демо-пользователей: demo123. Квиз: intake/start → intake/{id}/answer → intake/{id}/recommend → intake/{id}/application. Документы: GET /api/demo/documents/{inn}/{kind}.{fmt} → POST /api/applications/{id}/documents (multipart)."
  },
- "variable": [
-  {
-   "key": "base",
-   "value": "http://localhost:8000"
-  },
-  {
-   "key": "token",
-   "value": ""
-  }
- ],
  "item": [
   {
-   "name": "service",
+   "name": "ai",
    "item": [
     {
-     "name": "GET /api/health",
+     "name": "GET /api/ai/status",
      "request": {
       "method": "GET",
       "header": [
@@ -29,13 +19,14 @@
        }
       ],
       "url": {
-       "raw": "{{base}}/api/health",
+       "raw": "{{base}}/api/ai/status",
        "host": [
         "{{base}}"
        ],
        "path": [
         "api",
-        "health"
+        "ai",
+        "status"
        ]
       }
      }
@@ -68,7 +59,7 @@
       },
       "body": {
        "mode": "raw",
-       "raw": "{\"email\": \"ivan@demo.ru\", \"password\": \"demo123\"}"
+       "raw": "{\n  \"email\": \"ivan@demo.ru\",\n  \"password\": \"demo123\"\n}"
       }
      }
     },
@@ -103,6 +94,10 @@
        {
         "key": "Content-Type",
         "value": "application/json"
+       },
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
        }
       ],
       "url": {
@@ -114,15 +109,239 @@
         "api",
         "me"
        ]
-      },
-      "auth": {
-       "type": "bearer",
-       "bearer": [
-        {
-         "key": "token",
-         "value": "{{token}}",
-         "type": "string"
-        }
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "bank",
+   "item": [
+    {
+     "name": "GET /api/bank/applications",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       },
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/bank/applications",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "bank",
+        "applications"
+       ]
+      }
+     }
+    },
+    {
+     "name": "GET /api/bank/applications/{app_id}",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       },
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/bank/applications/{{app_id}}",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "bank",
+        "applications",
+        "{{app_id}}"
+       ]
+      }
+     }
+    },
+    {
+     "name": "POST /api/bank/applications/{app_id}/take",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       },
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/bank/applications/{{app_id}}/take",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "bank",
+        "applications",
+        "{{app_id}}",
+        "take"
+       ]
+      }
+     }
+    },
+    {
+     "name": "POST /api/bank/applications/{app_id}/documents/{doc_id}/review",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       },
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/bank/applications/{{app_id}}/documents/{{doc_id}}/review",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "bank",
+        "applications",
+        "{{app_id}}",
+        "documents",
+        "{{doc_id}}",
+        "review"
+       ]
+      }
+     }
+    },
+    {
+     "name": "POST /api/bank/applications/{app_id}/request-info",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       },
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/bank/applications/{{app_id}}/request-info",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "bank",
+        "applications",
+        "{{app_id}}",
+        "request-info"
+       ]
+      }
+     }
+    },
+    {
+     "name": "POST /api/bank/applications/{app_id}/rescore",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       },
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/bank/applications/{{app_id}}/rescore",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "bank",
+        "applications",
+        "{{app_id}}",
+        "rescore"
+       ]
+      }
+     }
+    },
+    {
+     "name": "POST /api/bank/applications/{app_id}/decision",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       },
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/bank/applications/{{app_id}}/decision",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "bank",
+        "applications",
+        "{{app_id}}",
+        "decision"
+       ]
+      }
+     }
+    },
+    {
+     "name": "GET /api/bank/stats",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       },
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/bank/stats",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "bank",
+        "stats"
        ]
       }
      }
@@ -140,6 +359,10 @@
        {
         "key": "Content-Type",
         "value": "application/json"
+       },
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
        }
       ],
       "url": {
@@ -150,16 +373,6 @@
        "path": [
         "api",
         "products"
-       ]
-      },
-      "auth": {
-       "type": "bearer",
-       "bearer": [
-        {
-         "key": "token",
-         "value": "{{token}}",
-         "type": "string"
-        }
        ]
       }
      }
@@ -172,6 +385,10 @@
        {
         "key": "Content-Type",
         "value": "application/json"
+       },
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
        }
       ],
       "url": {
@@ -184,15 +401,54 @@
         "demo",
         "inns"
        ]
-      },
-      "auth": {
-       "type": "bearer",
-       "bearer": [
-        {
-         "key": "token",
-         "value": "{{token}}",
-         "type": "string"
-        }
+      }
+     }
+    },
+    {
+     "name": "GET /api/demo/documents/{inn}",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/demo/documents/{{inn}}",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "demo",
+        "documents",
+        "{{inn}}"
+       ]
+      }
+     }
+    },
+    {
+     "name": "GET /api/demo/documents/{inn}/{kind}.{fmt}",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/demo/documents/{{inn}}/{{kind}}.{{fmt}}",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "demo",
+        "documents",
+        "{{inn}}",
+        "{{kind}}.{{fmt}}"
        ]
       }
      }
@@ -205,10 +461,14 @@
        {
         "key": "Content-Type",
         "value": "application/json"
+       },
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
        }
       ],
       "url": {
-       "raw": "{{base}}/api/companies/lookup/{inn}",
+       "raw": "{{base}}/api/companies/lookup/{{inn}}",
        "host": [
         "{{base}}"
        ],
@@ -216,17 +476,7 @@
         "api",
         "companies",
         "lookup",
-        "{inn}"
-       ]
-      },
-      "auth": {
-       "type": "bearer",
-       "bearer": [
-        {
-         "key": "token",
-         "value": "{{token}}",
-         "type": "string"
-        }
+        "{{inn}}"
        ]
       }
      }
@@ -239,6 +489,10 @@
        {
         "key": "Content-Type",
         "value": "application/json"
+       },
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
        }
       ],
       "url": {
@@ -251,20 +505,6 @@
         "products",
         "recommend"
        ]
-      },
-      "auth": {
-       "type": "bearer",
-       "bearer": [
-        {
-         "key": "token",
-         "value": "{{token}}",
-         "type": "string"
-        }
-       ]
-      },
-      "body": {
-       "mode": "raw",
-       "raw": "{}"
       }
      }
     },
@@ -276,6 +516,10 @@
        {
         "key": "Content-Type",
         "value": "application/json"
+       },
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
        }
       ],
       "url": {
@@ -286,48 +530,6 @@
        "path": [
         "api",
         "calculator"
-       ]
-      },
-      "auth": {
-       "type": "bearer",
-       "bearer": [
-        {
-         "key": "token",
-         "value": "{{token}}",
-         "type": "string"
-        }
-       ]
-      },
-      "body": {
-       "mode": "raw",
-       "raw": "{}"
-      }
-     }
-    }
-   ]
-  },
-  {
-   "name": "ai",
-   "item": [
-    {
-     "name": "GET /api/ai/status",
-     "request": {
-      "method": "GET",
-      "header": [
-       {
-        "key": "Content-Type",
-        "value": "application/json"
-       }
-      ],
-      "url": {
-       "raw": "{{base}}/api/ai/status",
-       "host": [
-        "{{base}}"
-       ],
-       "path": [
-        "api",
-        "ai",
-        "status"
        ]
       }
      }
@@ -345,6 +547,10 @@
        {
         "key": "Content-Type",
         "value": "application/json"
+       },
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
        }
       ],
       "url": {
@@ -355,16 +561,6 @@
        "path": [
         "api",
         "applications"
-       ]
-      },
-      "auth": {
-       "type": "bearer",
-       "bearer": [
-        {
-         "key": "token",
-         "value": "{{token}}",
-         "type": "string"
-        }
        ]
       }
      }
@@ -377,6 +573,10 @@
        {
         "key": "Content-Type",
         "value": "application/json"
+       },
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
        }
       ],
       "url": {
@@ -388,20 +588,37 @@
         "api",
         "applications"
        ]
-      },
-      "auth": {
-       "type": "bearer",
-       "bearer": [
-        {
-         "key": "token",
-         "value": "{{token}}",
-         "type": "string"
-        }
+      }
+     }
+    },
+    {
+     "name": "POST /api/applications/draft",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       },
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/applications/draft",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "applications",
+        "draft"
        ]
       },
       "body": {
        "mode": "raw",
-       "raw": "{}"
+       "raw": "{\n  \"product_code\": \"working_capital\",\n  \"amount\": 2000000,\n  \"term_months\": 24\n}"
       }
      }
     },
@@ -413,27 +630,21 @@
        {
         "key": "Content-Type",
         "value": "application/json"
+       },
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
        }
       ],
       "url": {
-       "raw": "{{base}}/api/applications/{app_id}",
+       "raw": "{{base}}/api/applications/{{app_id}}",
        "host": [
         "{{base}}"
        ],
        "path": [
         "api",
         "applications",
-        "{app_id}"
-       ]
-      },
-      "auth": {
-       "type": "bearer",
-       "bearer": [
-        {
-         "key": "token",
-         "value": "{{token}}",
-         "type": "string"
-        }
+        "{{app_id}}"
        ]
       }
      }
@@ -446,32 +657,26 @@
        {
         "key": "Content-Type",
         "value": "application/json"
+       },
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
        }
       ],
       "url": {
-       "raw": "{{base}}/api/applications/{app_id}",
+       "raw": "{{base}}/api/applications/{{app_id}}",
        "host": [
         "{{base}}"
        ],
        "path": [
         "api",
         "applications",
-        "{app_id}"
-       ]
-      },
-      "auth": {
-       "type": "bearer",
-       "bearer": [
-        {
-         "key": "token",
-         "value": "{{token}}",
-         "type": "string"
-        }
+        "{{app_id}}"
        ]
       },
       "body": {
        "mode": "raw",
-       "raw": "{}"
+       "raw": "{\n  \"company_inn\": \"7804123453\",\n  \"contact\": {\n    \"name\": \"Иванов Иван Иванович\",\n    \"phone\": \"+7 900 111-22-33\",\n    \"role\": \"owner\"\n  },\n  \"wizard_step\": 3\n}"
       }
      }
     },
@@ -483,28 +688,22 @@
        {
         "key": "Content-Type",
         "value": "application/json"
+       },
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
        }
       ],
       "url": {
-       "raw": "{{base}}/api/applications/{app_id}/documents",
+       "raw": "{{base}}/api/applications/{{app_id}}/documents",
        "host": [
         "{{base}}"
        ],
        "path": [
         "api",
         "applications",
-        "{app_id}",
+        "{{app_id}}",
         "documents"
-       ]
-      },
-      "auth": {
-       "type": "bearer",
-       "bearer": [
-        {
-         "key": "token",
-         "value": "{{token}}",
-         "type": "string"
-        }
        ]
       }
      }
@@ -517,30 +716,55 @@
        {
         "key": "Content-Type",
         "value": "application/json"
+       },
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
        }
       ],
       "url": {
-       "raw": "{{base}}/api/applications/{app_id}/documents/{doc_id}",
+       "raw": "{{base}}/api/applications/{{app_id}}/documents/{{doc_id}}",
        "host": [
         "{{base}}"
        ],
        "path": [
         "api",
         "applications",
-        "{app_id}",
+        "{{app_id}}",
         "documents",
-        "{doc_id}"
+        "{{doc_id}}"
+       ]
+      }
+     }
+    },
+    {
+     "name": "PATCH /api/extractions/{ext_id}",
+     "request": {
+      "method": "PATCH",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       },
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/extractions/{{ext_id}}",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "extractions",
+        "{{ext_id}}"
        ]
       },
-      "auth": {
-       "type": "bearer",
-       "bearer": [
-        {
-         "key": "token",
-         "value": "{{token}}",
-         "type": "string"
-        }
-       ]
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"value\": 750000\n}"
       }
      }
     },
@@ -552,33 +776,23 @@
        {
         "key": "Content-Type",
         "value": "application/json"
+       },
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
        }
       ],
       "url": {
-       "raw": "{{base}}/api/applications/{app_id}/submit",
+       "raw": "{{base}}/api/applications/{{app_id}}/submit",
        "host": [
         "{{base}}"
        ],
        "path": [
         "api",
         "applications",
-        "{app_id}",
+        "{{app_id}}",
         "submit"
        ]
-      },
-      "auth": {
-       "type": "bearer",
-       "bearer": [
-        {
-         "key": "token",
-         "value": "{{token}}",
-         "type": "string"
-        }
-       ]
-      },
-      "body": {
-       "mode": "raw",
-       "raw": "{}"
       }
      }
     },
@@ -590,35 +804,25 @@
        {
         "key": "Content-Type",
         "value": "application/json"
+       },
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
        }
       ],
       "url": {
-       "raw": "{{base}}/api/applications/{app_id}/info-requests/{rid}/answer",
+       "raw": "{{base}}/api/applications/{{app_id}}/info-requests/{{rid}}/answer",
        "host": [
         "{{base}}"
        ],
        "path": [
         "api",
         "applications",
-        "{app_id}",
+        "{{app_id}}",
         "info-requests",
-        "{rid}",
+        "{{rid}}",
         "answer"
        ]
-      },
-      "auth": {
-       "type": "bearer",
-       "bearer": [
-        {
-         "key": "token",
-         "value": "{{token}}",
-         "type": "string"
-        }
-       ]
-      },
-      "body": {
-       "mode": "raw",
-       "raw": "{}"
       }
      }
     },
@@ -630,34 +834,24 @@
        {
         "key": "Content-Type",
         "value": "application/json"
+       },
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
        }
       ],
       "url": {
-       "raw": "{{base}}/api/applications/{app_id}/offer/accept",
+       "raw": "{{base}}/api/applications/{{app_id}}/offer/accept",
        "host": [
         "{{base}}"
        ],
        "path": [
         "api",
         "applications",
-        "{app_id}",
+        "{{app_id}}",
         "offer",
         "accept"
        ]
-      },
-      "auth": {
-       "type": "bearer",
-       "bearer": [
-        {
-         "key": "token",
-         "value": "{{token}}",
-         "type": "string"
-        }
-       ]
-      },
-      "body": {
-       "mode": "raw",
-       "raw": "{}"
       }
      }
     },
@@ -669,34 +863,24 @@
        {
         "key": "Content-Type",
         "value": "application/json"
+       },
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
        }
       ],
       "url": {
-       "raw": "{{base}}/api/applications/{app_id}/offer/decline",
+       "raw": "{{base}}/api/applications/{{app_id}}/offer/decline",
        "host": [
         "{{base}}"
        ],
        "path": [
         "api",
         "applications",
-        "{app_id}",
+        "{{app_id}}",
         "offer",
         "decline"
        ]
-      },
-      "auth": {
-       "type": "bearer",
-       "bearer": [
-        {
-         "key": "token",
-         "value": "{{token}}",
-         "type": "string"
-        }
-       ]
-      },
-      "body": {
-       "mode": "raw",
-       "raw": "{}"
       }
      }
     },
@@ -708,33 +892,23 @@
        {
         "key": "Content-Type",
         "value": "application/json"
+       },
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
        }
       ],
       "url": {
-       "raw": "{{base}}/api/applications/{app_id}/sign",
+       "raw": "{{base}}/api/applications/{{app_id}}/sign",
        "host": [
         "{{base}}"
        ],
        "path": [
         "api",
         "applications",
-        "{app_id}",
+        "{{app_id}}",
         "sign"
        ]
-      },
-      "auth": {
-       "type": "bearer",
-       "bearer": [
-        {
-         "key": "token",
-         "value": "{{token}}",
-         "type": "string"
-        }
-       ]
-      },
-      "body": {
-       "mode": "raw",
-       "raw": "{}"
       }
      }
     },
@@ -746,33 +920,23 @@
        {
         "key": "Content-Type",
         "value": "application/json"
+       },
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
        }
       ],
       "url": {
-       "raw": "{{base}}/api/applications/{app_id}/cancel",
+       "raw": "{{base}}/api/applications/{{app_id}}/cancel",
        "host": [
         "{{base}}"
        ],
        "path": [
         "api",
         "applications",
-        "{app_id}",
+        "{{app_id}}",
         "cancel"
        ]
-      },
-      "auth": {
-       "type": "bearer",
-       "bearer": [
-        {
-         "key": "token",
-         "value": "{{token}}",
-         "type": "string"
-        }
-       ]
-      },
-      "body": {
-       "mode": "raw",
-       "raw": "{}"
       }
      }
     },
@@ -784,6 +948,10 @@
        {
         "key": "Content-Type",
         "value": "application/json"
+       },
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
        }
       ],
       "url": {
@@ -794,16 +962,6 @@
        "path": [
         "api",
         "notifications"
-       ]
-      },
-      "auth": {
-       "type": "bearer",
-       "bearer": [
-        {
-         "key": "token",
-         "value": "{{token}}",
-         "type": "string"
-        }
        ]
       }
      }
@@ -816,6 +974,10 @@
        {
         "key": "Content-Type",
         "value": "application/json"
+       },
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
        }
       ],
       "url": {
@@ -828,30 +990,171 @@
         "notifications",
         "read-all"
        ]
-      },
-      "auth": {
-       "type": "bearer",
-       "bearer": [
-        {
-         "key": "token",
-         "value": "{{token}}",
-         "type": "string"
-        }
-       ]
-      },
-      "body": {
-       "mode": "raw",
-       "raw": "{}"
       }
      }
     }
    ]
   },
   {
-   "name": "bank",
+   "name": "intake",
    "item": [
     {
-     "name": "GET /api/bank/applications",
+     "name": "POST /api/intake/start",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       },
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/intake/start",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "intake",
+        "start"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"text\": \"Нужно 1,5 млн на закупку товара к сезону, на 2 года\"\n}"
+      }
+     }
+    },
+    {
+     "name": "GET /api/intake/{sid}",
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       },
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/intake/{{sid}}",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "intake",
+        "{{sid}}"
+       ]
+      }
+     }
+    },
+    {
+     "name": "POST /api/intake/{sid}/answer",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       },
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/intake/{{sid}}/answer",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "intake",
+        "{{sid}}",
+        "answer"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"field\": \"legal_form\",\n  \"value\": \"ООО\"\n}"
+      }
+     }
+    },
+    {
+     "name": "POST /api/intake/{sid}/recommend",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       },
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/intake/{{sid}}/recommend",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "intake",
+        "{{sid}}",
+        "recommend"
+       ]
+      }
+     }
+    },
+    {
+     "name": "POST /api/intake/{sid}/application",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       },
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/intake/{{sid}}/application",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "intake",
+        "{{sid}}",
+        "application"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"product_code\": \"working_capital\"\n}"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "service",
+   "item": [
+    {
+     "name": "GET /api/health",
      "request": {
       "method": "GET",
       "header": [
@@ -861,293 +1164,28 @@
        }
       ],
       "url": {
-       "raw": "{{base}}/api/bank/applications",
+       "raw": "{{base}}/api/health",
        "host": [
         "{{base}}"
        ],
        "path": [
         "api",
-        "bank",
-        "applications"
-       ]
-      },
-      "auth": {
-       "type": "bearer",
-       "bearer": [
-        {
-         "key": "token",
-         "value": "{{token}}",
-         "type": "string"
-        }
-       ]
-      }
-     }
-    },
-    {
-     "name": "GET /api/bank/applications/{app_id}",
-     "request": {
-      "method": "GET",
-      "header": [
-       {
-        "key": "Content-Type",
-        "value": "application/json"
-       }
-      ],
-      "url": {
-       "raw": "{{base}}/api/bank/applications/{app_id}",
-       "host": [
-        "{{base}}"
-       ],
-       "path": [
-        "api",
-        "bank",
-        "applications",
-        "{app_id}"
-       ]
-      },
-      "auth": {
-       "type": "bearer",
-       "bearer": [
-        {
-         "key": "token",
-         "value": "{{token}}",
-         "type": "string"
-        }
-       ]
-      }
-     }
-    },
-    {
-     "name": "POST /api/bank/applications/{app_id}/take",
-     "request": {
-      "method": "POST",
-      "header": [
-       {
-        "key": "Content-Type",
-        "value": "application/json"
-       }
-      ],
-      "url": {
-       "raw": "{{base}}/api/bank/applications/{app_id}/take",
-       "host": [
-        "{{base}}"
-       ],
-       "path": [
-        "api",
-        "bank",
-        "applications",
-        "{app_id}",
-        "take"
-       ]
-      },
-      "auth": {
-       "type": "bearer",
-       "bearer": [
-        {
-         "key": "token",
-         "value": "{{token}}",
-         "type": "string"
-        }
-       ]
-      },
-      "body": {
-       "mode": "raw",
-       "raw": "{}"
-      }
-     }
-    },
-    {
-     "name": "POST /api/bank/applications/{app_id}/documents/{doc_id}/review",
-     "request": {
-      "method": "POST",
-      "header": [
-       {
-        "key": "Content-Type",
-        "value": "application/json"
-       }
-      ],
-      "url": {
-       "raw": "{{base}}/api/bank/applications/{app_id}/documents/{doc_id}/review",
-       "host": [
-        "{{base}}"
-       ],
-       "path": [
-        "api",
-        "bank",
-        "applications",
-        "{app_id}",
-        "documents",
-        "{doc_id}",
-        "review"
-       ]
-      },
-      "auth": {
-       "type": "bearer",
-       "bearer": [
-        {
-         "key": "token",
-         "value": "{{token}}",
-         "type": "string"
-        }
-       ]
-      },
-      "body": {
-       "mode": "raw",
-       "raw": "{}"
-      }
-     }
-    },
-    {
-     "name": "POST /api/bank/applications/{app_id}/request-info",
-     "request": {
-      "method": "POST",
-      "header": [
-       {
-        "key": "Content-Type",
-        "value": "application/json"
-       }
-      ],
-      "url": {
-       "raw": "{{base}}/api/bank/applications/{app_id}/request-info",
-       "host": [
-        "{{base}}"
-       ],
-       "path": [
-        "api",
-        "bank",
-        "applications",
-        "{app_id}",
-        "request-info"
-       ]
-      },
-      "auth": {
-       "type": "bearer",
-       "bearer": [
-        {
-         "key": "token",
-         "value": "{{token}}",
-         "type": "string"
-        }
-       ]
-      },
-      "body": {
-       "mode": "raw",
-       "raw": "{}"
-      }
-     }
-    },
-    {
-     "name": "POST /api/bank/applications/{app_id}/rescore",
-     "request": {
-      "method": "POST",
-      "header": [
-       {
-        "key": "Content-Type",
-        "value": "application/json"
-       }
-      ],
-      "url": {
-       "raw": "{{base}}/api/bank/applications/{app_id}/rescore",
-       "host": [
-        "{{base}}"
-       ],
-       "path": [
-        "api",
-        "bank",
-        "applications",
-        "{app_id}",
-        "rescore"
-       ]
-      },
-      "auth": {
-       "type": "bearer",
-       "bearer": [
-        {
-         "key": "token",
-         "value": "{{token}}",
-         "type": "string"
-        }
-       ]
-      },
-      "body": {
-       "mode": "raw",
-       "raw": "{}"
-      }
-     }
-    },
-    {
-     "name": "POST /api/bank/applications/{app_id}/decision",
-     "request": {
-      "method": "POST",
-      "header": [
-       {
-        "key": "Content-Type",
-        "value": "application/json"
-       }
-      ],
-      "url": {
-       "raw": "{{base}}/api/bank/applications/{app_id}/decision",
-       "host": [
-        "{{base}}"
-       ],
-       "path": [
-        "api",
-        "bank",
-        "applications",
-        "{app_id}",
-        "decision"
-       ]
-      },
-      "auth": {
-       "type": "bearer",
-       "bearer": [
-        {
-         "key": "token",
-         "value": "{{token}}",
-         "type": "string"
-        }
-       ]
-      },
-      "body": {
-       "mode": "raw",
-       "raw": "{}"
-      }
-     }
-    },
-    {
-     "name": "GET /api/bank/stats",
-     "request": {
-      "method": "GET",
-      "header": [
-       {
-        "key": "Content-Type",
-        "value": "application/json"
-       }
-      ],
-      "url": {
-       "raw": "{{base}}/api/bank/stats",
-       "host": [
-        "{{base}}"
-       ],
-       "path": [
-        "api",
-        "bank",
-        "stats"
-       ]
-      },
-      "auth": {
-       "type": "bearer",
-       "bearer": [
-        {
-         "key": "token",
-         "value": "{{token}}",
-         "type": "string"
-        }
+        "health"
        ]
       }
      }
     }
    ]
+  }
+ ],
+ "variable": [
+  {
+   "key": "base",
+   "value": "http://localhost:8000"
+  },
+  {
+   "key": "token",
+   "value": ""
   }
  ]
 }
