@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, UploadFile
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -12,10 +12,12 @@ from ..ai import get_provider, provider_status
 from ..config import settings
 from ..db import get_db
 from ..integrations import DEMO_SCENARIOS, egrul_lookup, inn_is_valid
-from ..models import Application, Company, Document, Event, InfoRequest, Loan, Notification, User, now
+from ..documents import samples
+from ..documents import service as docs_svc
+from ..models import Application, Company, DocExtraction, Document, Event, InfoRequest, Loan, Notification, User, now
 from ..products import DISCLAIMER, DOC_KINDS, PRODUCTS, REJECT_REASONS
-from ..schemas import (AnswerIn, ApplicationIn, ApplicationPatch, CalcIn, DeclineIn, DecisionIn, DocReviewIn, LoginIn,
-                       RecommendIn, RequestInfoIn, SignIn)
+from ..schemas import (AnswerIn, ApplicationIn, ApplicationPatch, CalcIn, DeclineIn, DecisionIn, DocReviewIn, ExtractionPatch,
+                       LoginIn, RecommendIn, RequestInfoIn, SignIn)
 from ..security import (bank_only, client_only, create_token, current_user, underwriter_only, verify_password)
 from ..services import offers as offers_svc
 from ..services import pipeline
@@ -70,6 +72,24 @@ def products(_: User = Depends(current_user)):
 @router.get("/demo/inns", tags=["catalog"])
 def demo_inns(_: User = Depends(current_user)):
     return [{"inn": v["inn"], "name": v["name"], "title": v["title"]} for v in DEMO_SCENARIOS.values()]
+
+
+@router.get("/demo/documents/{inn}", tags=["catalog"])
+def demo_documents(inn: str):
+    """Какие синтетические документы можно скачать для ИНН (для прохождения сценария без своих файлов)."""
+    if not inn_is_valid(inn):
+        raise HTTPException(422, "Некорректный ИНН")
+    return samples.catalog(inn)
+
+
+@router.get("/demo/documents/{inn}/{kind}.{fmt}", tags=["catalog"])
+def demo_document_file(inn: str, kind: str, fmt: str):
+    """Синтетический документ (данные выдуманы, помечены как демо). Без авторизации: персональных данных нет."""
+    try:
+        name, data, mime = samples.generate(inn, kind, fmt)
+    except ValueError as e:
+        raise HTTPException(404, str(e))
+    return Response(data, media_type=mime, headers={"Content-Disposition": f'attachment; filename="{name}"'})
 
 
 @router.get("/companies/lookup/{inn}", tags=["catalog"])
@@ -224,13 +244,17 @@ async def upload_doc(app_id: int, kind: str = Form(...), file: UploadFile = File
     stored = uuid.uuid4().hex + ext
     Path(settings.upload_dir).mkdir(parents=True, exist_ok=True)
     (Path(settings.upload_dir) / stored).write_bytes(content)
-    for d in [d for d in a.documents if d.kind == kind and d.status == "rejected"]:
+    # в черновике новый файл заменяет прежний того же типа; отклонённые банком заменяются всегда
+    for d in [d for d in a.documents if d.kind == kind and (d.status == "rejected" or a.status == "DRAFT")]:
+        _drop_doc(a, d)
         db.delete(d)
-    ex = get_provider().extract_document(kind, file.filename or stored, content)
+    db.flush()
     name = Path(file.filename or stored).name[:200]
-    a.documents.append(Document(kind=kind, filename=name, stored_name=stored, size=len(content), sha256=hashlib.sha256(content).hexdigest(),
-                                extracted={"status": ex.status, "fields": ex.fields}))
-    log(db, a, "document", f"Загружен документ: {DOC_KINDS[kind]}", name, u.name)
+    doc = Document(kind=kind, filename=name, stored_name=stored, size=len(content), sha256=hashlib.sha256(content).hexdigest(), extracted={})
+    a.documents.append(doc)
+    db.flush()
+    docs_svc.recognize(db, a, doc, content)
+    log(db, a, "document", f"Загружен документ: {DOC_KINDS[kind]}", f"{name} · {doc.extracted.get('note', '')}", u.name)
     db.commit()
     db.refresh(a)
     return ser.detail(a, u)
@@ -243,7 +267,41 @@ def delete_doc(app_id: int, doc_id: int, u: User = Depends(client_only), db: Ses
     d = next((x for x in a.documents if x.id == doc_id), None)
     if not d:
         raise HTTPException(404, "Документ не найден")
+    _drop_doc(a, d)
     db.delete(d)
+    db.flush()
+    db.refresh(a)
+    docs_svc.recheck_conflicts(a)
+    db.commit()
+    return ser.detail(a, u)
+
+
+def _drop_doc(a: Application, d: Document) -> None:
+    """Убираем из заявки числа, которые пришли только из этого документа."""
+    fin = dict(a.financials)
+    for x in d.extractions:
+        if fin.get(x.field) == x.value:
+            fin.pop(x.field, None)
+    a.financials = fin
+    if d in a.documents:
+        a.documents.remove(d)
+
+
+@router.patch("/extractions/{ext_id}", tags=["client"])
+def patch_extraction(ext_id: int, body: ExtractionPatch, u: User = Depends(client_only), db: Session = Depends(get_db)):
+    """Клиент правит значение, распознанное из документа, или подтверждает расхождение."""
+    x = db.get(DocExtraction, ext_id)
+    if not x:
+        raise HTTPException(404, "Значение не найдено")
+    a = _get(db, u, x.application_id)
+    _editable(a)
+    try:
+        docs_svc.edit(db, a, x, body.value, body.confirm)
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    if body.confirm:
+        log(db, a, "confirm", "Клиент подтвердил данные с расхождением", body.comment, u.name)
+    a.updated_at = now()
     db.commit()
     db.refresh(a)
     return ser.detail(a, u)
@@ -256,6 +314,8 @@ def submit(app_id: int, u: User = Depends(client_only), db: Session = Depends(ge
         raise HTTPException(409, "Заявка уже отправлена")
     if a.company is None:
         raise HTTPException(422, "Укажите компанию по ИНН")
+    if docs_svc.has_open_conflicts(a):
+        raise HTTPException(422, "Есть данные с пометкой «Требует проверки» — исправьте или подтвердите их")
     transition(db, a, "SUBMITTED", "Заявка отправлена в банк", actor=u.name)
     a.submitted_at = now()
     db.commit()

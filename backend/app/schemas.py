@@ -94,3 +94,9 @@ class DecisionIn(BaseModel):
     rate: float | None = Field(default=None, ge=0, le=60)
     reason_code: str | None = None
     comment: str | None = Field(default=None, max_length=1000)
+
+
+class ExtractionPatch(BaseModel):
+    value: int | None = Field(default=None, ge=-10**11, le=10**11)
+    confirm: bool = False
+    comment: str | None = Field(default=None, max_length=300)

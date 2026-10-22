@@ -2,6 +2,8 @@
 from datetime import datetime, timezone
 
 from .ai import get_provider
+from .documents.parsers import FIELD_LABELS
+from .documents.service import has_open_conflicts, review_fields
 from .models import Application, User, now
 from .products import DOC_KINDS, PRODUCTS, REJECT_REASONS
 from .services import offers as offers_svc
@@ -75,7 +77,13 @@ def detail(a: Application, user: User) -> dict:
         **summary(a), "steps": CLIENT_STEPS, "company": _company(a), "purpose": a.purpose, "has_collateral": a.has_collateral,
         "collateral_note": a.collateral_note, "financials": a.financials, "contact": a.contact, "wizard_step": a.wizard_step,
         "documents": [{"id": x.id, "kind": x.kind, "label": DOC_KINDS.get(x.kind, x.kind), "filename": x.filename, "size": x.size,
-                       "status": x.status, "review_comment": x.review_comment, "extraction": x.extracted.get("status", "not_available")} for x in a.documents],
+                       "status": x.status, "review_comment": x.review_comment, "extraction": x.extracted.get("status", "not_available"),
+                       "extraction_note": x.extracted.get("note"),
+                       "extractions": [{"id": e.id, "field": e.field, "label": FIELD_LABELS.get(e.field, e.field), "value": e.value,
+                                        "original_value": e.original_value, "source": e.source, "source_label": e.source_label,
+                                        "confidence": e.confidence, "status": e.status, "note": e.note} for e in x.extractions]}
+                      for x in a.documents],
+        "review": {"fields": review_fields(a), "has_conflicts": has_open_conflicts(a)},
         "required_documents": [{"kind": k, "label": DOC_KINDS[k], "uploaded": k in have} for k in need],
         "info_requests": [{"id": r.id, "message": r.message, "items": r.items, "status": r.status, "answer": r.answer,
                            "created_by": "Система" if r.created_by == "system" else r.created_by, "created_at": iso(r.created_at)} for r in a.info_requests],
