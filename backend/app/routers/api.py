@@ -13,7 +13,7 @@ from ..config import settings
 from ..db import get_db
 from ..integrations import DEMO_SCENARIOS, egrul_lookup, inn_is_valid
 from ..models import Application, Company, Document, Event, InfoRequest, Loan, Notification, User, now
-from ..products import DOC_KINDS, PRODUCTS, REJECT_REASONS
+from ..products import DISCLAIMER, DOC_KINDS, PRODUCTS, REJECT_REASONS
 from ..schemas import (AnswerIn, ApplicationIn, ApplicationPatch, CalcIn, DeclineIn, DecisionIn, DocReviewIn, LoginIn,
                        RecommendIn, RequestInfoIn, SignIn)
 from ..security import (bank_only, client_only, create_token, current_user, underwriter_only, verify_password)
@@ -63,7 +63,7 @@ def me(u: User = Depends(current_user)):
 
 @router.get("/products", tags=["catalog"])
 def products(_: User = Depends(current_user)):
-    return [{k: v for k, v in {**p, "docs": [{"kind": d, "label": DOC_KINDS[d]} for d in p["docs"]]}.items()
+    return [{k: v for k, v in {**p, "docs": [{"kind": d, "label": DOC_KINDS[d]} for d in p["docs"]], "disclaimer": DISCLAIMER}.items()
              if k not in ("auto_limit", "keywords")} for p in PRODUCTS.values()]
 
 
@@ -254,6 +254,8 @@ def submit(app_id: int, u: User = Depends(client_only), db: Session = Depends(ge
     a = _get(db, u, app_id)
     if a.status != "DRAFT":
         raise HTTPException(409, "Заявка уже отправлена")
+    if a.company is None:
+        raise HTTPException(422, "Укажите компанию по ИНН")
     transition(db, a, "SUBMITTED", "Заявка отправлена в банк", actor=u.name)
     a.submitted_at = now()
     db.commit()
@@ -379,7 +381,7 @@ def bank_list(group: str = "all", q: str = "", u: User = Depends(bank_only), db:
         _expire(db, a)
         if group not in ("all", "") and a.status not in BANK_GROUPS.get(group, []):
             continue
-        if q and q.lower() not in (a.company.name + a.company.inn + a.number).lower():
+        if q and q.lower() not in ((a.company.name + a.company.inn if a.company else "") + a.number).lower():
             continue
         out.append(ser.summary(a))
     return out

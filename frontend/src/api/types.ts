@@ -8,6 +8,8 @@ export interface Product {
   min_amount: number; max_amount: number; min_term: number; max_term: number
   base_rate: number; fee_pct: number; allows_collateral: boolean
   docs: { kind: string; label: string }[]
+  goals?: string[]; disclaimer?: string
+  eligibility?: { forms: string[]; min_business_age_months: number; collateral: 'optional' | 'required' | 'none'; collateral_required_from: number | null }
 }
 export interface CompanyInfo {
   inn: string; name: string; legal_form: string; ogrn?: string | null; okved?: string | null

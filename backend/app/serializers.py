@@ -33,7 +33,7 @@ def offer_dict(o):
 def summary(a: Application) -> dict:
     o, sc = current_offer(a), (a.scores[-1] if a.scores else None)
     return {
-        "id": a.id, "number": a.number, "company_name": a.company.name, "product_code": a.product_code,
+        "id": a.id, "number": a.number, "company_name": a.company.name if a.company else "Компания не указана", "product_code": a.product_code,
         "product_name": PRODUCTS[a.product_code]["name"], "amount": a.amount, "term_months": a.term_months,
         **{k: v for k, v in status_info(a.status).items()}, "status_label": status_info(a.status)["label"],
         "processing": a.processing, "created_at": iso(a.created_at), "updated_at": iso(a.updated_at), "decision": a.decision,
@@ -43,9 +43,11 @@ def summary(a: Application) -> dict:
     }
 
 
-def _company(a: Application) -> dict:
+def _company(a: Application) -> dict | None:
     eg = _latest(a, "egrul")
     c = a.company
+    if c is None:
+        return None
     return {"inn": c.inn, "name": c.name, "legal_form": c.legal_form, "ogrn": c.ogrn, "okved": c.okved, "reg_date": c.reg_date,
             "address": c.address, "director": c.director, "status": eg.get("status", "active"), "age_months": eg.get("age_months")}
 

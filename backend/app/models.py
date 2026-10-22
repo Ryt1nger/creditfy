@@ -1,7 +1,7 @@
 """Модель данных (см. docs/data-model.md)."""
 from datetime import datetime, timezone
 
-from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, BigInteger, Boolean, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .db import Base
@@ -41,7 +41,8 @@ class Application(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     number: Mapped[str] = mapped_column(String(30), unique=True, index=True)
     owner_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
-    company_id: Mapped[int] = mapped_column(ForeignKey("companies.id"))
+    # пусто, пока клиент не дошёл до шага «Компания» в мастере
+    company_id: Mapped[int | None] = mapped_column(ForeignKey("companies.id"), nullable=True)
     product_code: Mapped[str] = mapped_column(String(30))
     amount: Mapped[int] = mapped_column(Integer)
     term_months: Mapped[int] = mapped_column(Integer)
@@ -61,12 +62,13 @@ class Application(Base):
     decision_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     decision_by: Mapped[str | None] = mapped_column(String(40), nullable=True)  # auto | user:<id>
     version: Mapped[int] = mapped_column(Integer, default=1)
+    wizard_step: Mapped[int] = mapped_column(Integer, default=1)  # шаг мастера для «Продолжить с шага N»
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
 
-    company: Mapped[Company] = relationship()
+    company: Mapped[Company | None] = relationship()
     owner: Mapped[User] = relationship(foreign_keys=[owner_id])
     assignee: Mapped[User | None] = relationship(foreign_keys=[assigned_to_id])
     documents: Mapped[list["Document"]] = relationship(back_populates="application", cascade="all, delete-orphan")
@@ -91,9 +93,11 @@ class Document(Base):
     sha256: Mapped[str] = mapped_column(String(64), default="")
     status: Mapped[str] = mapped_column(String(20), default="uploaded")  # uploaded|verified|rejected
     review_comment: Mapped[str | None] = mapped_column(String(300), nullable=True)
-    extracted: Mapped[dict] = mapped_column(JSON, default=dict)  # результат распознавания (ИИ-заглушка)
+    extracted: Mapped[dict] = mapped_column(JSON, default=dict)  # {status: ok|partial|not_available, method, note}
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     application: Mapped[Application] = relationship(back_populates="documents")
+    extractions: Mapped[list["DocExtraction"]] = relationship(back_populates="document", cascade="all, delete-orphan",
+                                                              order_by="DocExtraction.id")
 
 
 class InfoRequest(Base):
@@ -190,3 +194,86 @@ class Notification(Base):
     text: Mapped[str] = mapped_column(String(300))
     read: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class DocExtraction(Base):
+    """Значение, извлечённое из документа. Клиент видит его с подписью источника и может поправить или подтвердить."""
+
+    __tablename__ = "doc_extractions"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    document_id: Mapped[int] = mapped_column(ForeignKey("documents.id"), index=True)
+    application_id: Mapped[int] = mapped_column(ForeignKey("applications.id"), index=True)
+    field: Mapped[str] = mapped_column(String(40))  # revenue_year | net_profit_year | monthly_turnover | ...
+    value: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    original_value: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    source: Mapped[str] = mapped_column(String(20))  # parser_pdf | parser_xlsx | parser_csv | ai | client
+    source_label: Mapped[str] = mapped_column(String(200))  # «Отчёт о финансовых результатах, строка 2110»
+    confidence: Mapped[float] = mapped_column(Float, default=1.0)
+    status: Mapped[str] = mapped_column(String(12), default="ok")  # ok | edited | conflict | confirmed
+    note: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+    document: Mapped[Document] = relationship(back_populates="extractions")
+
+
+class IntakeSession(Base):
+    """Квиз «опишите задачу»: что клиент написал, что из этого поняли, что спросили, какой портрет получился."""
+
+    __tablename__ = "intake_sessions"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    owner_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    text: Mapped[str] = mapped_column(Text, default="")
+    extracted: Mapped[dict] = mapped_column(JSON, default=dict)  # поле -> {value, source: text|answer|ai}
+    answers: Mapped[dict] = mapped_column(JSON, default=dict)  # поле -> значение (ответы карточками)
+    portrait: Mapped[dict] = mapped_column(JSON, default=dict)
+    recommendations: Mapped[dict] = mapped_column(JSON, default=dict)
+    status: Mapped[str] = mapped_column(String(12), default="questions")  # questions | ready | applied
+    ai_calls_used: Mapped[int] = mapped_column(Integer, default=0)
+    application_id: Mapped[int | None] = mapped_column(ForeignKey("applications.id"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+    turns: Mapped[list["IntakeTurn"]] = relationship(back_populates="session", cascade="all, delete-orphan",
+                                                     order_by="IntakeTurn.id")
+
+
+class IntakeTurn(Base):
+    __tablename__ = "intake_turns"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    session_id: Mapped[int] = mapped_column(ForeignKey("intake_sessions.id"), index=True)
+    field: Mapped[str] = mapped_column(String(40))
+    kind: Mapped[str] = mapped_column(String(10), default="question")  # question | clarify
+    question: Mapped[str] = mapped_column(String(300))
+    hint: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    options: Mapped[list] = mapped_column(JSON, default=list)
+    source: Mapped[str] = mapped_column(String(10), default="bank")  # bank | ai
+    answer: Mapped[dict | None] = mapped_column(JSON, nullable=True)  # {value, label}
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    answered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    session: Mapped[IntakeSession] = relationship(back_populates="turns")
+
+
+class AiCall(Base):
+    """Журнал обращений к модели: для бюджета (LLM_MAX_CALLS на сессию) и аудита. Текст запроса не храним."""
+
+    __tablename__ = "ai_calls"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    session_id: Mapped[int | None] = mapped_column(ForeignKey("intake_sessions.id"), nullable=True, index=True)
+    application_id: Mapped[int | None] = mapped_column(ForeignKey("applications.id"), nullable=True, index=True)
+    purpose: Mapped[str] = mapped_column(String(30))  # parse | question | clarify | extract
+    model: Mapped[str] = mapped_column(String(80))
+    status: Mapped[str] = mapped_column(String(12))  # ok | invalid | timeout | error | cached
+    latency_ms: Mapped[int] = mapped_column(Integer, default=0)
+    prompt_chars: Mapped[int] = mapped_column(Integer, default=0)
+    error: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class CatalogItem(Base):
+    """Копия конфигурации (продукты, реестр полей) в БД — грузится из JSON при старте."""
+
+    __tablename__ = "catalog_items"
+    __table_args__ = (UniqueConstraint("kind", "code"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    kind: Mapped[str] = mapped_column(String(10))  # product | field
+    code: Mapped[str] = mapped_column(String(40))
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    data: Mapped[dict] = mapped_column(JSON, default=dict)

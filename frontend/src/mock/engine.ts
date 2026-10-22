@@ -1,7 +1,7 @@
 // Демо-движок: полностью заменяет бэкенд в браузере (VITE_API_MODE=mock). Логика зеркалит backend/app/services.
 import type { ApplicationDetail, ApplicationSummary, Me } from '../api/types'
 import { bki, demoInns, egrul, innValid, pb, SCENARIOS } from './registry'
-import { DOC_KINDS, PRODUCTS, REJECT_REASONS } from './products'
+import { DISCLAIMER, DOC_KINDS, PRODUCTS, REJECT_REASONS } from './products'
 import { availableCash, dscr, findOffer, rateFor, schedule, annuity, type OfferCalc } from './offers'
 import { scoreApplication } from './scoring'
 
@@ -282,7 +282,7 @@ R('POST', '/auth/login', ({ body }) => {
 })
 R('GET', '/auth/demo-accounts', () => db.users.map((u) => ({ email: u.email, name: u.name, role: u.role, hint: { 'ivan@demo.ru': 'ООО «Север-Логистика» — сильный клиент', 'volkov@demo.ru': 'ИП Волков — пограничный случай', 'maria@demo.ru': 'ООО «Пекарня №1» — встречное предложение', 'operator@demo.ru': 'Оператор: проверка полноты и документов', 'risk@demo.ru': 'Андеррайтер: принимает решения' }[u.email as string] ?? '' })))
 R('GET', '/me', (c) => need(c))
-R('GET', '/products', (c) => { need(c); return Object.values(PRODUCTS).map(({ auto_limit, keywords, ...p }) => p) })
+R('GET', '/products', (c) => { need(c); return Object.values(PRODUCTS).map(({ auto_limit, keywords, ...p }) => ({ ...p, disclaimer: DISCLAIMER })) })
 R('GET', '/demo/inns', (c) => { need(c); return demoInns() })
 R('GET', '/companies/lookup/:inn', (c) => { need(c); if (!innValid(c.m[1])) throw new ApiError(422, 'Некорректный ИНН: проверьте цифры (10 для организаций, 12 для ИП)'); const e = egrul(c.m[1]); return e })
 R('POST', '/products/recommend', (c) => {

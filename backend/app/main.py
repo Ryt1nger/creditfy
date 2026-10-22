@@ -14,6 +14,9 @@ logging.basicConfig(level=logging.INFO)
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     Base.metadata.create_all(engine)
+    from .catalog import load_into_db
+    with SessionLocal() as db:
+        load_into_db(db)
     if settings.seed_demo:
         from .seed import seed_demo
         with SessionLocal() as db:
