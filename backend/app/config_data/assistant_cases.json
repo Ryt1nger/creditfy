@@ -1,0 +1,57 @@
+{
+ "about": "Общие примеры помощника: проверяются pytest и vitest",
+ "cases": [
+  {
+   "text": "Какие у вас есть кредиты?",
+   "intent": "products"
+  },
+  {
+   "text": "какая ставка",
+   "intent": "rates"
+  },
+  {
+   "text": "Какие нужны документы?",
+   "intent": "docs"
+  },
+  {
+   "text": "Сколько ждать решения?",
+   "intent": "time"
+  },
+  {
+   "text": "нужен залог?",
+   "intent": "collateral"
+  },
+  {
+   "text": "как подать заявку",
+   "intent": "how"
+  },
+  {
+   "text": "Как принимается решение? откажут?",
+   "intent": "scoring"
+  },
+  {
+   "text": "где мой статус",
+   "intent": "status"
+  },
+  {
+   "text": "какие суммы и сроки",
+   "intent": "limits"
+  },
+  {
+   "text": "что с моими данными",
+   "intent": "data"
+  },
+  {
+   "text": "как работает ИИ",
+   "intent": "ai"
+  },
+  {
+   "text": "привет",
+   "intent": null
+  },
+  {
+   "text": "В решении указана причина",
+   "intent": null
+  }
+ ]
+}

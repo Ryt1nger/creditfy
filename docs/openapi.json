@@ -409,6 +409,51 @@
     ]
    }
   },
+  "/api/assistant/ask": {
+   "post": {
+    "tags": [
+     "ai"
+    ],
+    "summary": "Assistant Ask",
+    "description": "Демо-ответ помощника по ключевым словам (готовые тексты, без ИИ). matched=false — вопрос не распознан.",
+    "operationId": "assistant_ask_api_assistant_ask_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AskIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ]
+   }
+  },
   "/api/ai/status": {
    "get": {
     "tags": [
@@ -2006,6 +2051,18 @@
      "product_code"
     ],
     "title": "ApplyIn"
+   },
+   "AskIn": {
+    "properties": {
+     "text": {
+      "type": "string",
+      "maxLength": 500,
+      "title": "Text",
+      "default": ""
+     }
+    },
+    "type": "object",
+    "title": "AskIn"
    },
    "Body_upload_doc_api_applications__app_id__documents_post": {
     "properties": {

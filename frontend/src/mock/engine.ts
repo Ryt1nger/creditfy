@@ -4,6 +4,7 @@ import { bki, demoInns, egrul, innValid, pb, SCENARIOS } from './registry'
 import { DISCLAIMER, DOC_KINDS, PRODUCTS, REJECT_REASONS } from './products'
 import { availableCash, dscr, findOffer, rateFor, schedule, annuity, type OfferCalc } from './offers'
 import { scoreApplication } from './scoring'
+import { ask as assistantAsk } from './assistant'
 import { answerSession, openTurn, recommendFor, sessionDict, startSession, known as sessKnown, optionLabel, type Sess } from './intake'
 import { active as activeEx, dropDocNumbers, editExtraction, hasConflicts, recheck, recognize, reviewFields, type Ex } from './docs'
 
@@ -318,6 +319,7 @@ R('POST', '/products/recommend', (c) => {
   return { source: 'stub', is_stub: true, items }
 })
 R('POST', '/calculator', (c) => { need(c); const { product_code, amount, term_months, has_collateral } = c.body; const p = PRODUCTS[product_code]; const r = rateFor(product_code, 'B', !!has_collateral) - 1.5; const pay = annuity(amount, term_months, r); return { rate_from: r, monthly_payment: Math.round(pay), total_payment: Math.round(pay * term_months), fee: Math.round((amount * p.fee_pct) / 100) } })
+R('POST', '/assistant/ask', (c) => { need(c); return assistantAsk(String(c.body?.text ?? '').slice(0, 500)) })
 R('GET', '/ai/status', () => ({ provider: 'stub', is_stub: true, llm_enabled: false, requested: 'rules', planned_model: 'DeepSeek-R1 (открытые веса, локально через Ollama)', model: 'deepseek-r1:1.5b', max_calls: 3, timeout: 8, features: [
   { key: 'intake', title: 'Формулировка вопросов квиза и один уточняющий вопрос', where: 'клиент · «Опишите задачу» (в демо-режиме — имитация)' }, { key: 'parse', title: 'Подстраховка разбора свободного текста', where: 'клиент · «Опишите задачу»' },
   { key: 'extract', title: 'Запасной разбор документа, если парсер не нашёл чисел', where: 'клиент · документы' }] }))

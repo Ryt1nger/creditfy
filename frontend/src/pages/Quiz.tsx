@@ -9,6 +9,11 @@ import { Loading, useToast } from '../ui/kit'
 import { IArrow, ICheck } from '../ui/Icons'
 import { AssistantBox, ProductCard, ProductDetails, SHORT, StarMark, TitleBar } from '../ui/alfa'
 import { months, num, rub } from '../lib/format'
+import { parseNeed } from '../lib/need'
+
+interface Help { q: string; matched: boolean; answer: string; suggestions: string[] }
+const QWORDS = /^(как|что|какие|какой|какая|какое|сколько|почему|где|когда|можно|нужен|нужна|нужно ли|нужны|есть ли|чем|зачем|кто|а если)\b/i
+const looksLikeQuestion = (t: string) => t.includes('?') || QWORDS.test(t.trim())
 
 const CHIPS = ['Закупить товар', 'Купить оборудование', 'Открыть новую точку', 'Закрыть кассовый разрыв']
 const SRC: Record<string, string> = { text: 'из вашего описания', answer: 'ваш ответ', ai: 'понято моделью' }
@@ -68,6 +73,7 @@ export default function Quiz() {
   const [text, setText] = useState(''); const [busy, setBusy] = useState(false)
   const [s, setS] = useState<IntakeSession | null>(null); const [more, setMore] = useState<string | null>(null)
   const [editing, setEditing] = useState<string | null>(null); const [showBad, setShowBad] = useState(false)
+  const [help, setHelp] = useState<Help | null>(null)
   const started = useRef(false)
   const sid = sp.get('s')
 
@@ -75,9 +81,19 @@ export default function Quiz() {
   async function run<T>(f: () => Promise<T>): Promise<T | undefined> { setBusy(true); try { return await f() } catch (e) { fail(e) } finally { setBusy(false) } }
   const toWizard = (a: ApplicationDetail) => { qc.invalidateQueries({ queryKey: ['apps'] }); nav(`/apply/${a.id}`) }
 
-  async function start(t: string) {
+  async function startQuiz(t: string) {
+    setHelp(null)
     const r = await run(() => api<IntakeSession>('POST', '/intake/start', { text: t }))
     if (r) { setS(r); setSp({ s: String(r.id) }, { replace: true }) }
+  }
+  /** Вопрос о продукте («какая ставка?») — отвечаем готовым демо-ответом; описание задачи — запускаем квиз. */
+  async function start(t: string) {
+    const p = parseNeed(t)
+    if (p.goal || p.goal_candidates || p.amount) return startQuiz(t)
+    const a = await run(() => api<{ matched: boolean; answer: string; suggestions: string[] }>('POST', '/assistant/ask', { text: t }))
+    if (!a) return
+    if (a.matched || looksLikeQuestion(t)) { setHelp({ q: t, ...a }); setText(''); return }
+    return startQuiz(t)
   }
   async function draftFor(code: string, amount?: number, term?: number) {
     const a = await run(() => api<ApplicationDetail>('POST', '/applications/draft', { product_code: code, amount, term_months: term }))
@@ -86,12 +102,13 @@ export default function Quiz() {
   useEffect(() => {
     if (started.current) return
     started.current = true
-    const st = (loc.state ?? {}) as { need?: string; code?: string; amount?: number; term?: number }
+    const st = (loc.state ?? {}) as { need?: string; code?: string; amount?: number; term?: number; help?: boolean }
     const draft = sp.get('draft')
     if (draft) { nav(`/apply/${draft}`, { replace: true }); return }
     if (sid) { api<IntakeSession>('GET', `/intake/${sid}`).then(setS).catch(() => setSp({}, { replace: true })) }
     else if (st.code) void draftFor(st.code, st.amount, st.term)
     else if (st.need) { setText(st.need); void start(st.need) }
+    else if (st.help) { void api<{ matched: boolean; answer: string; suggestions: string[] }>('POST', '/assistant/ask', { text: '' }).then((a) => setHelp({ q: '', ...a })) }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { window.scrollTo({ top: 0 }) }, [s?.question?.turn_id, s?.status, editing, !!s?.recommendations])
 
@@ -126,8 +143,17 @@ export default function Quiz() {
 
       {!s && (
         <div className="stack lg swap">
+          {help && (
+            <section className="helpcard" aria-live="polite">
+              <div className="row between wrap"><span className="qtag ai"><i />Помощник · готовый демо-ответ (без ИИ)</span><button className="linkbtn" onClick={() => setHelp(null)}>Закрыть</button></div>
+              {help.q && <div className="hq">{help.q}</div>}
+              <p className="hans">{help.answer}</p>
+              <div className="chips2" style={{ marginTop: 0 }}>{help.suggestions.map((q) => <button key={q} onClick={() => start(q)}>{q}</button>)}</div>
+              <div className="row wrap" style={{ gap: 14 }}>{help.q && !help.matched ? null : help.q && <button className="btn primary" disabled={busy} onClick={() => startQuiz(help.q)}>Подобрать кредит под мою задачу <IArrow /></button>}<span className="muted small">Условия демонстрационные, не реальные предложения банка.</span></div>
+            </section>
+          )}
           <div>
-            <AssistantBox value={text} onChange={setText} onSubmit={() => text.trim().length >= 3 && start(text)} busy={busy} label="Опиши задачу — задам только недостающие вопросы" />
+            <AssistantBox value={text} onChange={setText} onSubmit={() => text.trim().length >= 3 && start(text)} busy={busy} label="Опиши задачу или задай вопрос о кредитах" />
             <div className="chips2">{CHIPS.map((c) => <button key={c} onClick={() => start(c)}>{c}</button>)}</div>
             <p className="muted small" style={{ marginTop: 14 }}>Сначала разбираем текст по правилам, затем задаём по одному вопросу карточками. ИИ-модель (если включена) только подсказывает формулировки — подбор и условия считают правила.</p>
           </div>

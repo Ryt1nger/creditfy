@@ -35,7 +35,7 @@ export function Shell() {
         <div className="in">
           <Link to="/" className="brand" aria-label="Альфа-Банк"><Logo /><span className="bank">Альфа-Банк</span><span className="prod">{bank ? 'Кабинет кредитного специалиста' : 'Кредитный кабинет'}</span></Link>
           <div className="grow" />
-          <div className="hlinks"><button onClick={soon}>Помощь</button><button onClick={soon}>Настройки</button></div>
+          <div className="hlinks"><button onClick={() => nav('/apply', { state: { help: true } })}>Помощь</button><button onClick={soon}>Настройки</button></div>
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 10 }} ref={ref}>
             <button className="iconbtn" aria-label="Уведомления" onClick={() => { const o = open === 'n' ? '' : 'n'; setOpen(o); if (o && unread) api('POST', '/notifications/read-all').then(() => qc.invalidateQueries({ queryKey: ['notifications'] })) }}>
               <IBell />{unread > 0 && <span className="dot" />}

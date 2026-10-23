@@ -16,6 +16,10 @@ class RegisterIn(BaseModel):
     role: Literal["client", "bank"] = "client"
 
 
+class AskIn(BaseModel):
+    text: str = Field(default="", max_length=500)
+
+
 class RecommendIn(BaseModel):
     text: str = Field(max_length=1000)
     amount: int | None = None

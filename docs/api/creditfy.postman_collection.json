@@ -9,6 +9,33 @@
    "name": "ai",
    "item": [
     {
+     "name": "POST /api/assistant/ask",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       },
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/assistant/ask",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "assistant",
+        "ask"
+       ]
+      }
+     }
+    },
+    {
      "name": "GET /api/ai/status",
      "request": {
       "method": "GET",

@@ -16,7 +16,7 @@ from ..documents import samples
 from ..documents import service as docs_svc
 from ..models import Application, Company, DocExtraction, Document, Event, InfoRequest, Loan, Notification, User, now
 from ..products import DISCLAIMER, DOC_KINDS, PRODUCTS, REJECT_REASONS
-from ..schemas import (AnswerIn, ApplicationIn, ApplicationPatch, CalcIn, DeclineIn, DecisionIn, DocReviewIn, DraftIn, ExtractionPatch,
+from ..schemas import (AnswerIn, AskIn, ApplicationIn, ApplicationPatch, CalcIn, DeclineIn, DecisionIn, DocReviewIn, DraftIn, ExtractionPatch,
                        LoginIn, RecommendIn, RegisterIn, RequestInfoIn, SignIn)
 from ..security import (bank_only, client_only, create_token, current_user, hash_password, underwriter_only, verify_password)
 from ..services import offers as offers_svc
@@ -117,6 +117,13 @@ def calculator(body: CalcIn, _: User = Depends(current_user)):
     pay = offers_svc.annuity(body.amount, body.term_months, rate)
     return {"rate_from": rate, "monthly_payment": round(pay), "total_payment": round(pay * body.term_months),
             "fee": round(body.amount * p["fee_pct"] / 100)}
+
+
+@router.post("/assistant/ask", tags=["ai"])
+def assistant_ask(body: AskIn, _: User = Depends(current_user)):
+    """Демо-ответ помощника по ключевым словам (готовые тексты, без ИИ). matched=false — вопрос не распознан."""
+    from ..assistant import ask
+    return ask(body.text)
 
 
 @router.get("/ai/status", tags=["ai"])
