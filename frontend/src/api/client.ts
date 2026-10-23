@@ -1,6 +1,8 @@
 import { initEngine, mockRequest, ApiError as MockError } from '../mock/engine'
 
 export const MODE: 'mock' | 'live' = (import.meta.env.VITE_API_MODE as string) === 'live' ? 'live' : 'mock'
+// Адрес API: пусто — тот же origin (nginx/Vite-прокси); для статического хостинга (Render) задаётся при сборке.
+export const API_BASE: string = ((import.meta.env.VITE_API_BASE as string | undefined) ?? '').replace(/\/$/, '')
 export class ApiError extends Error { constructor(public status: number, message: string) { super(message) } }
 const TOKEN = 'creditfy.token'
 export const getToken = () => { try { return sessionStorage.getItem(TOKEN) } catch { return null } }
@@ -13,7 +15,7 @@ export async function api<T = any>(method: string, path: string, body?: unknown)
   }
   let res: Response
   try {
-    res = await fetch('/api' + path, { method, headers: { 'Content-Type': 'application/json', ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}) }, body: body === undefined ? undefined : JSON.stringify(body) })
+    res = await fetch(API_BASE + '/api' + path, { method, headers: { 'Content-Type': 'application/json', ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}) }, body: body === undefined ? undefined : JSON.stringify(body) })
   } catch { throw new ApiError(0, 'Нет связи с сервером. Проверьте интернет и повторите.') }
   if (!res.ok) {
     let msg = 'Что-то пошло не так'
@@ -27,7 +29,7 @@ export async function uploadDocument(appId: number, kind: string, file: File) {
   if (file.size > 5 * 1024 * 1024) throw new ApiError(413, 'Файл больше 5 МБ')
   if (MODE === 'mock') return api('POST', `/applications/${appId}/documents`, { kind, filename: file.name, size: file.size })
   const fd = new FormData(); fd.append('kind', kind); fd.append('file', file)
-  const res = await fetch(`/api/applications/${appId}/documents`, { method: 'POST', headers: getToken() ? { Authorization: `Bearer ${getToken()}` } : {}, body: fd })
+  const res = await fetch(`${API_BASE}/api/applications/${appId}/documents`, { method: 'POST', headers: getToken() ? { Authorization: `Bearer ${getToken()}` } : {}, body: fd })
   if (!res.ok) { let m = 'Не удалось загрузить файл'; try { m = (await res.json()).detail ?? m } catch { /* ignore */ } throw new ApiError(res.status, m) }
   return res.json()
 }

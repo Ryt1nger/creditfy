@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { api, MODE, uploadDocument } from '../api/client'
+import { api, API_BASE, MODE, uploadDocument } from '../api/client'
 import { useDemoInns, useProducts } from '../api/hooks'
 import type { ApplicationDetail, CalcResult, CompanyInfo, DocumentItem, ReviewField } from '../api/types'
 import { ErrorBox, Field, Loading, useToast } from '../ui/kit'
@@ -121,7 +121,7 @@ export default function Wizard() {
         const c = cat.find((x) => x.kind === rd.kind); if (!c) continue
         const fmt = c.formats[0], name = `${rd.kind}_${a.company.inn}.${fmt}`
         let file: File
-        if (MODE === 'live') { const r = await fetch(`/api/demo/documents/${a.company.inn}/${rd.kind}.${fmt}`); file = new File([await r.blob()], name) } else file = new File(['demo'], name)
+        if (MODE === 'live') { const r = await fetch(`${API_BASE}/api/demo/documents/${a.company.inn}/${rd.kind}.${fmt}`); file = new File([await r.blob()], name) } else file = new File(['demo'], name)
         d = await uploadDocument(d.id, rd.kind, file)
       }
       apply(d)

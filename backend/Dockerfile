@@ -9,4 +9,5 @@ COPY app ./app
 RUN useradd -m app && mkdir -p /data/uploads && chown -R app /data
 USER app
 EXPOSE 8000
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Render задаёт PORT; локально и в Compose — 8000
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
