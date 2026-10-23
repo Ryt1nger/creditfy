@@ -14,9 +14,11 @@ export async function api<T = any>(method: string, path: string, body?: unknown)
     try { return (await mockRequest(method, path, body, getToken())) as T } catch (e) { if (e instanceof MockError) throw new ApiError(e.status, e.message); throw e }
   }
   let res: Response
+  // бесплатный хостинг «просыпается» до минуты: ждём, но не бесконечно
+  const ctl = new AbortController(); const timer = setTimeout(() => ctl.abort(), 90_000)
   try {
-    res = await fetch(API_BASE + '/api' + path, { method, headers: { 'Content-Type': 'application/json', ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}) }, body: body === undefined ? undefined : JSON.stringify(body) })
-  } catch { throw new ApiError(0, 'Нет связи с сервером. Проверьте интернет и повторите.') }
+    res = await fetch(API_BASE + '/api' + path, { signal: ctl.signal, method, headers: { 'Content-Type': 'application/json', ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}) }, body: body === undefined ? undefined : JSON.stringify(body) })
+  } catch { throw new ApiError(0, 'Сервер не ответил. Если он на бесплатном хостинге, он мог ещё не проснуться — повторите через минуту.') } finally { clearTimeout(timer) }
   if (!res.ok) {
     let msg = 'Что-то пошло не так'
     try { const j = await res.json(); msg = typeof j.detail === 'string' ? j.detail : Array.isArray(j.detail) ? j.detail.map((d: any) => d.msg).join('; ') : msg } catch { /* ignore */ }

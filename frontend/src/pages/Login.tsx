@@ -1,6 +1,8 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../api/auth'
+import { api, API_BASE, MODE } from '../api/client'
+import type { Me } from '../api/types'
 import { Ribbon } from '../ui/Shell'
 import { Decor, Field } from '../ui/kit'
 import { IArrow, IBuild, IShield } from '../ui/Icons'
@@ -12,7 +14,10 @@ const STEPS = {
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 export default function Login() {
-  const { login, register } = useAuth(); const nav = useNavigate()
+  const { enter } = useAuth(); const nav = useNavigate()
+  const [slow, setSlow] = useState(false)
+  // будим бесплатный сервер, пока человек вводит данные
+  useEffect(() => { if (MODE === 'live') fetch(API_BASE + '/api/health').catch(() => {}) }, [])
   const [mode, setMode] = useState<'login' | 'register'>('login'); const [role, setRole] = useState<'client' | 'bank'>('client')
   const [name, setName] = useState(''); const [email, setEmail] = useState(''); const [pw, setPw] = useState(''); const [agree, setAgree] = useState(false)
   const [err, setErr] = useState(''); const [busy, setBusy] = useState(false); const [progress, setProgress] = useState<{ i: number } | null>(null)
@@ -24,13 +29,18 @@ export default function Login() {
     setBusy(true); setProgress({ i: 0 })
     const steps = STEPS[mode][role]
     // сам запрос идёт параллельно с показом шагов: пользователь видит процесс, а ошибка (чужой пароль, занятая почта) приходит сразу после него
-    const call = (mode === 'login' ? login(email, pw) : register(name.trim(), email, pw, role)).then((u) => ({ u }), (x) => ({ x }))
+    const call = api<{ token: string; user: Me }>('POST', mode === 'login' ? '/auth/login' : '/auth/register', mode === 'login' ? { email, password: pw } : { name: name.trim(), email, password: pw, role }).then((u) => ({ u }), (x) => ({ x }))
+    // сессию открываем только после показа всех шагов, иначе экран исчезнет посреди имитации
     for (let i = 0; i < steps.length; i++) { setProgress({ i }); await sleep(650) }
+    const slowTimer = setTimeout(() => setSlow(true), 2500)
     const r = await call
+    clearTimeout(slowTimer); setSlow(false)
     if ('x' in r) { setProgress(null); setBusy(false); setErr((r.x as Error).message); return }
-    if (role === 'client' && r.u.role !== 'client') { setProgress(null); setBusy(false); setErr('Эта почта относится к сотруднику банка — выберите «Сотрудник банка»'); return }
-    if (role === 'bank' && r.u.role === 'client') { setProgress(null); setBusy(false); setErr('Эта почта относится к предпринимателю — выберите «Предприниматель»'); return }
-    setProgress({ i: steps.length }); await sleep(350); nav(r.u.role === 'client' ? '/' : '/bank')
+    const user = 'u' in r ? r.u.user : null
+    if (!user) return
+    if (role === 'client' && user.role !== 'client') { setProgress(null); setBusy(false); setErr('Эта почта относится к сотруднику банка — выберите «Сотрудник банка»'); return }
+    if (role === 'bank' && user.role === 'client') { setProgress(null); setBusy(false); setErr('Эта почта относится к предпринимателю — выберите «Предприниматель»'); return }
+    setProgress({ i: steps.length }); await sleep(350); enter(r.u.token, user); nav(user.role === 'client' ? '/' : '/bank')
   }
   return (
     <>
@@ -54,6 +64,7 @@ export default function Login() {
               <div className="stack lg" aria-live="polite">
                 <div><h2>{mode === 'login' ? 'Входим…' : 'Создаём кабинет…'}</h2><p className="muted" style={{ marginTop: 6 }}>Это имитация: письма, SMS и звонков нет — всё происходит внутри продукта.</p></div>
                 <ol className="authsteps">{STEPS[mode][role].map((t, i) => <li key={t} className={i < progress.i ? 'done' : i === progress.i ? 'cur' : ''}><span>{i < progress.i ? '✓' : i + 1}</span>{t}</li>)}</ol>
+                {slow && <div className="callout" role="status">Сервер на бесплатном хостинге просыпается — это может занять до минуты. Страницу не закрывайте.</div>}
               </div>
             ) : (<>
               <div><h2>{mode === 'login' ? 'Вход в кабинет' : 'Регистрация'}</h2><p className="muted" style={{ marginTop: 6 }}>{mode === 'login' ? 'Выберите, кто вы, и введите почту и пароль.' : 'Создадим кабинет за полминуты — подтверждение прямо здесь.'}</p></div>
