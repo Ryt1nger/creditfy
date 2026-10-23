@@ -64,19 +64,40 @@
     }
    }
   },
-  "/api/auth/demo-accounts": {
-   "get": {
+  "/api/auth/register": {
+   "post": {
     "tags": [
      "auth"
     ],
-    "summary": "Demo Accounts",
-    "operationId": "demo_accounts_api_auth_demo_accounts_get",
+    "summary": "Register",
+    "description": "Имитация регистрации: создаёт пользователя сразу (клиент или сотрудник банка), письмо и SMS не отправляются.",
+    "operationId": "register_api_auth_register_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RegisterIn"
+       }
+      }
+     },
+     "required": true
+    },
     "responses": {
      "200": {
       "description": "Successful Response",
       "content": {
        "application/json": {
         "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
        }
       }
      }
@@ -2424,6 +2445,45 @@
      "text"
     ],
     "title": "RecommendIn"
+   },
+   "RegisterIn": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "maxLength": 120,
+      "minLength": 2,
+      "title": "Name"
+     },
+     "email": {
+      "type": "string",
+      "maxLength": 120,
+      "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+      "title": "Email"
+     },
+     "password": {
+      "type": "string",
+      "maxLength": 100,
+      "minLength": 6,
+      "title": "Password"
+     },
+     "role": {
+      "type": "string",
+      "enum": [
+       "client",
+       "bank"
+      ],
+      "title": "Role",
+      "default": "client"
+     }
+    },
+    "type": "object",
+    "required": [
+     "name",
+     "email",
+     "password"
+    ],
+    "title": "RegisterIn",
+    "description": "Регистрация в демо: без почты и SMS, подтверждение имитируется на экране."
    },
    "RequestInfoIn": {
     "properties": {

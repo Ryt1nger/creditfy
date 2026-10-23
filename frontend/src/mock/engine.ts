@@ -298,11 +298,17 @@ const busy = (a: any) => { if (a.processing) throw new ApiError(409, 'Заявк
 
 R('POST', '/auth/login', ({ body }) => {
   const u = db.users.find((x) => x.email === String(body.email).trim().toLowerCase())
-  if (!u || body.password !== 'demo123') throw new ApiError(401, 'Неверный логин или пароль')
-  return { token: 'mock.' + u.id, user: u }
+  if (!u || body.password !== (u.password ?? 'demo123')) throw new ApiError(401, 'Неверный логин или пароль')
+  const { password, ...pub } = u; return { token: 'mock.' + u.id, user: pub }
 })
-R('GET', '/auth/demo-accounts', () => db.users.map((u) => ({ email: u.email, name: u.name, role: u.role, hint: { 'ivan@demo.ru': 'ООО «Север-Логистика» — сильный клиент', 'volkov@demo.ru': 'ИП Волков — пограничный случай', 'maria@demo.ru': 'ООО «Пекарня №1» — встречное предложение', 'operator@demo.ru': 'Оператор: проверка полноты и документов', 'risk@demo.ru': 'Андеррайтер: принимает решения' }[u.email as string] ?? '' })))
-R('GET', '/me', (c) => need(c))
+R('POST', '/auth/register', ({ body }) => {
+  const email = String(body.email ?? '').trim().toLowerCase(), name = String(body.name ?? '').trim()
+  if (name.length < 2) throw new ApiError(422, 'Укажите имя'); if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new ApiError(422, 'Укажите корректную почту'); if (String(body.password ?? '').length < 6) throw new ApiError(422, 'Пароль — не короче 6 символов')
+  if (db.users.some((x) => x.email === email)) throw new ApiError(409, 'Пользователь с такой почтой уже есть — войдите')
+  const u = { id: nid('usr'), name, email, role: body.role === 'bank' ? 'underwriter' : 'client', password: body.password }; db.users.push(u); save()
+  const { password, ...pub } = u; return { token: 'mock.' + u.id, user: pub }
+})
+R('GET', '/me', (c) => { const { password, ...pub } = need(c) as any; return pub })
 R('GET', '/products', (c) => { need(c); return Object.values(PRODUCTS).map(({ auto_limit, keywords, ...p }) => ({ ...p, disclaimer: DISCLAIMER })) })
 R('GET', '/demo/inns', (c) => { need(c); return demoInns() })
 R('GET', '/companies/lookup/:inn', (c) => { need(c); if (!innValid(c.m[1])) throw new ApiError(422, 'Некорректный ИНН: проверьте цифры (10 для организаций, 12 для ИП)'); const e = egrul(c.m[1]); return e })

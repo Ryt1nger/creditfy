@@ -1,29 +1,37 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../api/auth'
-import { api } from '../api/client'
-import type { DemoAccount } from '../api/types'
 import { Ribbon } from '../ui/Shell'
 import { Decor, Field } from '../ui/kit'
-import { IArrow, IBuild, IUser, IShield } from '../ui/Icons'
+import { IArrow, IBuild, IShield } from '../ui/Icons'
+
+const STEPS = {
+  login: { client: ['Проверяем почту и пароль', 'Открываем кабинет предпринимателя'], bank: ['Проверяем почту и пароль', 'Проверяем доступ сотрудника', 'Открываем кабинет банка'] },
+  register: { client: ['Проверяем данные', 'Создаём профиль предпринимателя', 'Подтверждаем кабинет (симуляция)'], bank: ['Проверяем данные', 'Проверяем полномочия сотрудника (симуляция)', 'Создаём кабинет банка'] },
+} as const
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 export default function Login() {
-  const { login } = useAuth(); const nav = useNavigate()
-  const [acc, setAcc] = useState<DemoAccount[]>([]); const [email, setEmail] = useState(''); const [pw, setPw] = useState('demo123')
-  const [err, setErr] = useState(''); const [busy, setBusy] = useState(false)
-  useEffect(() => { api<DemoAccount[]>('GET', '/auth/demo-accounts').then(setAcc).catch(() => {}) }, [])
-  async function go(e: string, p: string) {
-    setBusy(true); setErr('')
-    try { const u = await login(e, p); nav(u.role === 'client' ? '/' : '/bank') } catch (x) { setErr((x as Error).message) } finally { setBusy(false) }
+  const { login, register } = useAuth(); const nav = useNavigate()
+  const [mode, setMode] = useState<'login' | 'register'>('login'); const [role, setRole] = useState<'client' | 'bank'>('client')
+  const [name, setName] = useState(''); const [email, setEmail] = useState(''); const [pw, setPw] = useState(''); const [agree, setAgree] = useState(false)
+  const [err, setErr] = useState(''); const [busy, setBusy] = useState(false); const [progress, setProgress] = useState<{ i: number } | null>(null)
+  async function submit(e: FormEvent) {
+    e.preventDefault(); setErr('')
+    if (mode === 'register' && name.trim().length < 2) return setErr('Укажите имя и фамилию')
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) return setErr('Укажите корректную почту')
+    if (!pw || (mode === 'register' && pw.length < 6)) return setErr(mode === 'register' ? 'Пароль — не короче 6 символов' : 'Введите пароль')
+    setBusy(true); setProgress({ i: 0 })
+    const steps = STEPS[mode][role]
+    // сам запрос идёт параллельно с показом шагов: пользователь видит процесс, а ошибка (чужой пароль, занятая почта) приходит сразу после него
+    const call = (mode === 'login' ? login(email, pw) : register(name.trim(), email, pw, role)).then((u) => ({ u }), (x) => ({ x }))
+    for (let i = 0; i < steps.length; i++) { setProgress({ i }); await sleep(650) }
+    const r = await call
+    if ('x' in r) { setProgress(null); setBusy(false); setErr((r.x as Error).message); return }
+    if (role === 'client' && r.u.role !== 'client') { setProgress(null); setBusy(false); setErr('Эта почта относится к сотруднику банка — выберите «Сотрудник банка»'); return }
+    if (role === 'bank' && r.u.role === 'client') { setProgress(null); setBusy(false); setErr('Эта почта относится к предпринимателю — выберите «Предприниматель»'); return }
+    setProgress({ i: steps.length }); await sleep(350); nav(r.u.role === 'client' ? '/' : '/bank')
   }
-  const submit = (e: FormEvent) => { e.preventDefault(); go(email, pw) }
-  const clients = acc.filter((a) => a.role === 'client'), bank = acc.filter((a) => a.role !== 'client')
-  const Row = ({ a }: { a: DemoAccount }) => (
-    <button className="acc" onClick={() => go(a.email, 'demo123')} disabled={busy}>
-      <span className="avatar" style={{ background: a.role === 'client' ? 'var(--lime)' : 'var(--purple)', color: a.role === 'client' ? 'var(--ink)' : '#fff' }}>{a.name[0]}</span>
-      <span className="grow"><div style={{ fontWeight: 700 }}>{a.name}</div><div className="small muted">{a.hint}</div></span><IArrow size={20} />
-    </button>
-  )
   return (
     <>
       <Ribbon />
@@ -42,18 +50,27 @@ export default function Login() {
         </section>
         <section className="panel">
           <div className="card stack lg" style={{ width: 480, maxWidth: '100%' }}>
-            <div><h2>Войти в демо</h2><p className="muted" style={{ marginTop: 6 }}>Выберите роль — пароль подставится сам (<b>demo123</b>).</p></div>
-            <div className="stack sm"><div className="row small muted" style={{ fontWeight: 600 }}><IBuild size={18} /> Предприниматель</div>{clients.map((a) => <Row key={a.email} a={a} />)}</div>
-            <div className="stack sm"><div className="row small muted" style={{ fontWeight: 600 }}><IShield size={18} /> Сотрудник банка</div>{bank.map((a) => <Row key={a.email} a={a} />)}</div>
-            <details>
-              <summary className="small muted"><IUser size={16} style={{ verticalAlign: -3 }} /> Войти вручную</summary>
-              <form className="stack" onSubmit={submit} style={{ marginTop: 14 }}>
-                <Field label="Эл. почта"><input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="ivan@demo.ru" autoComplete="username" /></Field>
-                <Field label="Пароль"><input className="input" type="password" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="current-password" /></Field>
-                <button className="btn primary lg" disabled={busy}>Войти</button>
+            {progress ? (
+              <div className="stack lg" aria-live="polite">
+                <div><h2>{mode === 'login' ? 'Входим…' : 'Создаём кабинет…'}</h2><p className="muted" style={{ marginTop: 6 }}>Это имитация: письма, SMS и звонков нет — всё происходит внутри продукта.</p></div>
+                <ol className="authsteps">{STEPS[mode][role].map((t, i) => <li key={t} className={i < progress.i ? 'done' : i === progress.i ? 'cur' : ''}><span>{i < progress.i ? '✓' : i + 1}</span>{t}</li>)}</ol>
+              </div>
+            ) : (<>
+              <div><h2>{mode === 'login' ? 'Вход в кабинет' : 'Регистрация'}</h2><p className="muted" style={{ marginTop: 6 }}>{mode === 'login' ? 'Выберите, кто вы, и введите почту и пароль.' : 'Создадим кабинет за полминуты — подтверждение прямо здесь.'}</p></div>
+              <div className="roles" role="radiogroup" aria-label="Кто вы">
+                <button type="button" role="radio" aria-checked={role === 'client'} className={role === 'client' ? 'on' : ''} onClick={() => setRole('client')}><IBuild size={22} /><b>Предприниматель</b><span>подаю заявку на кредит</span></button>
+                <button type="button" role="radio" aria-checked={role === 'bank'} className={role === 'bank' ? 'on' : ''} onClick={() => setRole('bank')}><IShield size={22} /><b>Сотрудник банка</b><span>рассматриваю заявки</span></button>
+              </div>
+              <form className="stack" onSubmit={submit} noValidate>
+                {mode === 'register' && <Field label="Имя и фамилия"><input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Иван Иванов" autoComplete="name" /></Field>}
+                <Field label="Эл. почта"><input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@company.ru" autoComplete="username" /></Field>
+                <Field label="Пароль" hint={mode === 'register' ? 'Не короче 6 символов' : undefined}><input className="input" type="password" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} /></Field>
+                {mode === 'register' && <label className="check"><input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} /><span className="small">Согласен на обработку данных. Все данные в демо вымышлены.</span></label>}
+                {err && <div className="callout bad">{err}</div>}
+                <button className="btn primary lg" disabled={busy || (mode === 'register' && !agree)}>{mode === 'login' ? 'Войти' : 'Зарегистрироваться'} <IArrow /></button>
               </form>
-            </details>
-            {err && <div className="callout bad">{err}</div>}
+              <div className="small muted" style={{ textAlign: 'center' }}>{mode === 'login' ? 'Нет кабинета? ' : 'Уже есть кабинет? '}<button className="linkbtn" onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setErr('') }}>{mode === 'login' ? 'Зарегистрироваться' : 'Войти'}</button></div>
+            </>)}
           </div>
         </section>
       </div>

@@ -8,6 +8,14 @@ class LoginIn(BaseModel):
     password: str
 
 
+class RegisterIn(BaseModel):
+    """Регистрация в демо: без почты и SMS, подтверждение имитируется на экране."""
+    name: str = Field(min_length=2, max_length=120)
+    email: str = Field(max_length=120, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+    password: str = Field(min_length=6, max_length=100)
+    role: Literal["client", "bank"] = "client"
+
+
 class RecommendIn(BaseModel):
     text: str = Field(max_length=1000)
     amount: int | None = None

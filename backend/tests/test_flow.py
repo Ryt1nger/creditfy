@@ -124,3 +124,17 @@ def test_stats_and_ai_status(client, risk):
     assert st["total"] >= 7 and st["funnel"][0]["count"] == st["total"]
     ai = client.get("/api/ai/status").json()
     assert ai["is_stub"] and ai["provider"] == "stub"
+
+
+def test_register_and_login(client):
+    r = client.post("/api/auth/register", json={"name": "Новый Клиент", "email": "New@Test.ru", "password": "secret1", "role": "client"})
+    assert r.status_code == 200 and r.json()["user"]["role"] == "client" and r.json()["user"]["email"] == "new@test.ru"
+    assert client.post("/api/auth/register", json={"name": "Другой", "email": "new@test.ru", "password": "secret1"}).status_code == 409
+    assert client.post("/api/auth/register", json={"name": "Х", "email": "bad", "password": "123"}).status_code == 422
+    assert client.post("/api/auth/login", json={"email": "new@test.ru", "password": "secret1"}).status_code == 200
+    assert client.post("/api/auth/login", json={"email": "new@test.ru", "password": "wrong"}).status_code == 401
+    h = {"Authorization": "Bearer " + r.json()["token"]}
+    assert client.get("/api/applications", headers=h).json() == []  # чистый кабинет
+    b = client.post("/api/auth/register", json={"name": "Сотрудник Банка", "email": "emp@test.ru", "password": "secret1", "role": "bank"}).json()
+    assert b["user"]["role"] == "underwriter"
+    assert client.get("/api/auth/demo-accounts").status_code == 404

@@ -17,8 +17,8 @@ from ..documents import service as docs_svc
 from ..models import Application, Company, DocExtraction, Document, Event, InfoRequest, Loan, Notification, User, now
 from ..products import DISCLAIMER, DOC_KINDS, PRODUCTS, REJECT_REASONS
 from ..schemas import (AnswerIn, ApplicationIn, ApplicationPatch, CalcIn, DeclineIn, DecisionIn, DocReviewIn, DraftIn, ExtractionPatch,
-                       LoginIn, RecommendIn, RequestInfoIn, SignIn)
-from ..security import (bank_only, client_only, create_token, current_user, underwriter_only, verify_password)
+                       LoginIn, RecommendIn, RegisterIn, RequestInfoIn, SignIn)
+from ..security import (bank_only, client_only, create_token, current_user, hash_password, underwriter_only, verify_password)
 from ..services import offers as offers_svc
 from ..services import pipeline
 from ..services.workflow import log, notify, transition
@@ -31,9 +31,6 @@ BANK_GROUPS = {
     "manual": ["MANUAL_REVIEW"], "waiting": ["NEEDS_INFO"], "auto": ["SUBMITTED", "COMPLETENESS_CHECK", "ENRICHMENT", "SCORING"],
     "offers": ["OFFER_READY", "SIGNING"], "done": ["DISBURSED", "REJECTED", "DECLINED_BY_CLIENT", "EXPIRED", "CANCELLED"],
 }
-HINTS = {"operator@demo.ru": "Оператор: проверка полноты и документов", "risk@demo.ru": "Андеррайтер: принимает решения",
-         "ivan@demo.ru": "ООО «Север-Логистика» — сильный клиент", "volkov@demo.ru": "ИП Волков — пограничный случай",
-         "maria@demo.ru": "ООО «Пекарня №1» — встречное предложение"}
 
 
 # ───────── служебное ─────────
@@ -51,11 +48,16 @@ def login(body: LoginIn, db: Session = Depends(get_db)):
     return {"token": create_token(u), "user": {"id": u.id, "name": u.name, "email": u.email, "role": u.role}}
 
 
-@router.get("/auth/demo-accounts", tags=["auth"])
-def demo_accounts(db: Session = Depends(get_db)):
-    if not settings.seed_demo:
-        return []
-    return [{"email": u.email, "name": u.name, "role": u.role, "hint": HINTS.get(u.email, "")} for u in db.scalars(select(User).order_by(User.id))]
+@router.post("/auth/register", tags=["auth"])
+def register(body: RegisterIn, db: Session = Depends(get_db)):
+    """Имитация регистрации: создаёт пользователя сразу (клиент или сотрудник банка), письмо и SMS не отправляются."""
+    email = body.email.strip().lower()
+    if db.scalar(select(User.id).where(User.email == email)):
+        raise HTTPException(409, "Пользователь с такой почтой уже есть — войдите")
+    u = User(name=body.name.strip(), email=email, role="client" if body.role == "client" else "underwriter", password_hash=hash_password(body.password))
+    db.add(u)
+    db.commit()
+    return {"token": create_token(u), "user": {"id": u.id, "name": u.name, "email": u.email, "role": u.role}}
 
 
 @router.get("/me", tags=["auth"])
