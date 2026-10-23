@@ -8,7 +8,7 @@ import httpx
 
 ROOT = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:8080"
 B = ROOT + "/api"
-c = httpx.Client(base_url=B, timeout=30)
+c = httpx.Client(base_url=B, timeout=60)
 tok=c.post("/auth/login",json={"email":"ivan@demo.ru","password":"demo123"}).json()["token"]; H={"Authorization":f"Bearer {tok}"}
 def show(t): print("✓",t)
 s=c.post("/intake/start",json={"text":"Нужно 1,5 млн на закупку товара к сезону, на 2 года"},headers=H).json()

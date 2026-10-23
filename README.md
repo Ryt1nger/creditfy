@@ -30,6 +30,12 @@ cd frontend && npm ci && VITE_API_MODE=live npm run dev    # http://localhost:51
 **Вариант 3 — только фронтенд на встроенных демо-данных (без бэкенда):** `cd frontend && npm ci && npm run dev`.
 Движок в браузере (`src/mock`) повторяет логику бэкенда; состояние хранится в localStorage, сброс — ссылка «Сбросить демо-данные» внизу.
 
+## Облачная демонстрация (Render, бесплатный тариф)
+* Веб: https://creditfy-web.onrender.com · API и Swagger: https://creditfy-api.onrender.com/docs (логины ниже, пароль `demo123`).
+* Статический сайт (`frontend`, `VITE_API_MODE=live`, `VITE_API_BASE`) + Docker-сервис API (`backend/Dockerfile`), SQLite внутри контейнера, модель выключена (`LLM_ENABLED=0`).
+* Бесплатный тариф засыпает: первый запрос после простоя идёт ~50 с; при пересборке или перезапуске SQLite и загруженные файлы сбрасываются, демо-данные создаются заново.
+* Сквозная проверка: `python backend/scripts/e2e_live.py https://creditfy-api.onrender.com`.
+
 ## Тестовые учётные записи (пароль `demo123`)
 | Роль | Логин | Что показывает |
 |---|---|---|
