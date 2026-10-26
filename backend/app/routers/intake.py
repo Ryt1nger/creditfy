@@ -103,6 +103,8 @@ def recommend(sid: int, u: User = Depends(client_only), db: Session = Depends(ge
 def create_application(sid: int, body: ApplyIn, u: User = Depends(client_only), db: Session = Depends(get_db)):
     """Черновик заявки из сессии: сумма, срок, цель и залог переносятся, повторно вводить не нужно."""
     s = _get(db, u, sid)
+    if body.product_code == "overdraft":
+        raise HTTPException(422, "Овердрафт доступен для ознакомления")
     p = PRODUCTS.get(body.product_code)
     if not p:
         raise HTTPException(422, "Неизвестный продукт")
@@ -113,6 +115,7 @@ def create_application(sid: int, body: ApplyIn, u: User = Depends(client_only), 
         if a and a.status == "DRAFT":
             if a.product_code != p["code"]:
                 a.product_code = p["code"]
+                a.product_snapshot = dict(p)
                 a.amount = min(max(a.amount, p["min_amount"]), p["max_amount"])
                 a.term_months = min(max(a.term_months, p["min_term"]), p["max_term"])
                 a.has_collateral = a.has_collateral and p["allows_collateral"]

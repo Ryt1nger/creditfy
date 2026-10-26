@@ -25,7 +25,7 @@ def hash_password(password: str, salt: bytes | None = None) -> str:
 def verify_password(password: str, stored: str) -> bool:
     try:
         _, salt_hex, dk_hex = stored.split("$")
-    except ValueError:
+    except (ValueError, TypeError):
         return False
     dk = hashlib.pbkdf2_hmac("sha256", password.encode(), bytes.fromhex(salt_hex), 120_000)
     return hmac.compare_digest(dk.hex(), dk_hex)
@@ -47,9 +47,10 @@ def current_user(
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Требуется вход")
     try:
         data = jwt.decode(creds.credentials, settings.jwt_secret, algorithms=["HS256"])
-    except jwt.PyJWTError:
+        user_id = int(data["sub"])
+    except (jwt.PyJWTError, ValueError, TypeError, KeyError):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Сессия истекла, войдите заново")
-    user = db.get(User, int(data["sub"]))
+    user = db.get(User, user_id)
     if not user:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Пользователь не найден")
     return user

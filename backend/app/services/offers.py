@@ -24,7 +24,7 @@ def annuity(amount: float, term: int, rate_pct: float) -> float:
 
 def rate_for(product: dict, grade: str, collateral: bool) -> float:
     rate = product["base_rate"] + GRADE_PREMIUM.get(grade, 5.0)
-    if collateral and product["allows_collateral"]:
+    if collateral and product["allows_collateral"] and not product.get("public_conditions"):
         rate -= 1.0
     return round(rate, 2)
 
@@ -67,9 +67,9 @@ def build_offer(product: dict, amount: int, term: int, rate: float, free_cash: f
                      dscr(amount, term, rate, free_cash), explanation)
 
 
-def find_offer(product_code: str, amount: int, term: int, grade: str, collateral: bool, free_cash: float) -> OfferCalc | None:
+def find_offer(product_code: str, amount: int, term: int, grade: str, collateral: bool, free_cash: float, product: dict | None = None) -> OfferCalc | None:
     """Возвращает исходные условия, встречное предложение или None, если платить нечем."""
-    p = PRODUCTS[product_code]
+    p = product or PRODUCTS[product_code]
     rate = rate_for(p, grade, collateral)
     amount = min(max(amount, p["min_amount"]), p["max_amount"])
     term = min(max(term, p["min_term"]), p["max_term"])

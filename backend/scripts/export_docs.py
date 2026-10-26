@@ -11,6 +11,8 @@ from app.main import app  # noqa: E402
 
 DOCS = Path(__file__).resolve().parents[2] / "docs"
 BODIES = {
+    "POST /api/auth/demo": {},
+    "POST /api/auth/register": {"name": "Новый клиент", "email": "client@example.test", "password": "test-password", "role": "client"},
     "POST /api/auth/login": {"email": "ivan@demo.ru", "password": "demo123"},
     "POST /api/intake/start": {"text": "Нужно 1,5 млн на закупку товара к сезону, на 2 года"},
     "POST /api/intake/{sid}/answer": {"field": "legal_form", "value": "ООО"},
@@ -33,7 +35,7 @@ def main() -> None:
             name = f"{method.upper()} {path}"
             item = {"name": name, "request": {"method": method.upper(), "header": [{"key": "Content-Type", "value": "application/json"}],
                     "url": {"raw": "{{base}}" + raw, "host": ["{{base}}"], "path": [p for p in raw.strip("/").split("/")]}}}
-            if path not in ("/api/auth/login", "/api/health", "/api/auth/demo-accounts", "/api/ai/status") and not path.startswith("/api/demo/documents"):
+            if path not in ("/api/auth/login", "/api/auth/register", "/api/auth/demo", "/api/health", "/api/auth/demo-accounts", "/api/ai/status") and not path.startswith("/api/demo/documents"):
                 item["request"]["header"].append({"key": "Authorization", "value": "Bearer {{token}}"})
             if name in BODIES:
                 item["request"]["body"] = {"mode": "raw", "raw": json.dumps(BODIES[name], ensure_ascii=False, indent=2)}

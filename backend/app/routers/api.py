@@ -15,9 +15,10 @@ from ..integrations import DEMO_SCENARIOS, egrul_lookup, inn_is_valid
 from ..documents import samples
 from ..documents import service as docs_svc
 from ..models import Application, Company, DocExtraction, Document, Event, InfoRequest, Loan, Notification, User, now
+from ..product_snapshot import product_for
 from ..products import DISCLAIMER, DOC_KINDS, PRODUCTS, REJECT_REASONS
 from ..schemas import (AnswerIn, AskIn, ApplicationIn, ApplicationPatch, CalcIn, DeclineIn, DecisionIn, DocReviewIn, DraftIn, ExtractionPatch,
-                       LoginIn, RecommendIn, RegisterIn, RequestInfoIn, SignIn)
+                       LoginIn, RecommendIn, RegisterIn, DemoIn, Financials, Contact, RequestInfoIn, SignIn)
 from ..security import (bank_only, client_only, create_token, current_user, hash_password, underwriter_only, verify_password)
 from ..services import offers as offers_svc
 from ..services import pipeline
@@ -52,11 +53,23 @@ def login(body: LoginIn, db: Session = Depends(get_db)):
 def register(body: RegisterIn, db: Session = Depends(get_db)):
     """Имитация регистрации: создаёт пользователя сразу (клиент или сотрудник банка), письмо и SMS не отправляются."""
     email = body.email.strip().lower()
+    if email in {"ivan@demo.ru", "volkov@demo.ru", "maria@demo.ru", "operator@demo.ru", "risk@demo.ru"}:
+        raise HTTPException(409, "Этот адрес зарезервирован для учебного кабинета")
     if db.scalar(select(User.id).where(User.email == email)):
         raise HTTPException(409, "Пользователь с такой почтой уже есть — войдите")
-    u = User(name=body.name.strip(), email=email, role="client" if body.role == "client" else "underwriter", password_hash=hash_password(body.password))
+    u = User(name=body.name.strip(), email=email, role="client", password_hash=hash_password(body.password))
     db.add(u)
     db.commit()
+    return {"token": create_token(u), "user": {"id": u.id, "name": u.name, "email": u.email, "role": u.role}}
+
+
+@router.post("/auth/demo", tags=["auth"])
+def demo_login(body: DemoIn = DemoIn(), db: Session = Depends(get_db)):
+    if not settings.demo_access_enabled or not settings.seed_demo:
+        raise HTTPException(404, "Вход недоступен")
+    u = db.scalar(select(User).where(User.email == "ivan@demo.ru", User.role == "client"))
+    if not u or u.name != "Иван Соколов" or not verify_password("demo123", u.password_hash):
+        raise HTTPException(503, "Учебный кабинет ещё не подготовлен")
     return {"token": create_token(u), "user": {"id": u.id, "name": u.name, "email": u.email, "role": u.role}}
 
 
@@ -113,6 +126,9 @@ def calculator(body: CalcIn, _: User = Depends(current_user)):
     p = PRODUCTS.get(body.product_code)
     if not p:
         raise HTTPException(422, "Неизвестный продукт")
+    _limits(body.product_code, body.amount, body.term_months)
+    if body.product_code == "overdraft":
+        raise HTTPException(422, "Овердрафт рассчитывается по фактическому использованию лимита, аннуитетный платёж не применяется")
     rate = offers_svc.rate_for(p, "A", body.has_collateral)
     pay = offers_svc.annuity(body.amount, body.term_months, rate)
     return {"rate_from": rate, "monthly_payment": round(pay), "total_payment": round(pay * body.term_months),
@@ -174,8 +190,8 @@ def _set_company(db: Session, owner: User, inn: str) -> Company:
     return c
 
 
-def _limits(code: str, amount: int, term: int) -> None:
-    p = PRODUCTS.get(code)
+def _limits(code: str, amount: int, term: int, product: dict | None = None) -> None:
+    p = product or PRODUCTS.get(code)
     if not p:
         raise HTTPException(422, "Неизвестный продукт")
     if not (p["min_amount"] <= amount <= p["max_amount"]):
@@ -195,6 +211,8 @@ def my_apps(u: User = Depends(client_only), db: Session = Depends(get_db)):
 
 @router.post("/applications", tags=["client"])
 def create_app(body: ApplicationIn, u: User = Depends(client_only), db: Session = Depends(get_db)):
+    if body.product_code == "overdraft":
+        raise HTTPException(422, "Овердрафт доступен для ознакомления. Для заявки выберите оборотный кредит")
     _limits(body.product_code, body.amount, body.term_months)
     c = _set_company(db, u, body.company_inn)
     a = Application(number="tmp-" + uuid.uuid4().hex[:8], owner_id=u.id, company_id=c.id, product_code=body.product_code,
@@ -211,13 +229,15 @@ def create_app(body: ApplicationIn, u: User = Depends(client_only), db: Session 
 @router.post("/applications/draft", tags=["client"])
 def create_draft(body: DraftIn, u: User = Depends(client_only), db: Session = Depends(get_db)):
     """Черновик без компании: клиент выбрал продукт сам (минуя квиз) и оформляет заявку в мастере."""
+    if body.product_code == "overdraft":
+        raise HTTPException(422, "Овердрафт доступен для ознакомления. Для заявки выберите оборотный кредит")
     p = PRODUCTS.get(body.product_code)
     if not p:
         raise HTTPException(422, "Неизвестный продукт")
     amount = min(max(body.amount or 2_000_000, p["min_amount"]), p["max_amount"])
     term = min(max(body.term_months or 24, p["min_term"]), p["max_term"])
     a = Application(number="tmp-" + uuid.uuid4().hex[:8], owner_id=u.id, company_id=None, product_code=p["code"], amount=amount,
-                    term_months=term, purpose=p["tagline"], financials={}, contact={"name": u.name}, wizard_step=1)
+                    term_months=term, purpose=p["tagline"], has_collateral=p["eligibility"]["collateral"] == "required", financials={}, contact={"name": u.name}, wizard_step=1)
     db.add(a)
     db.flush()
     a.number = f"АБ-{datetime.now().year}-{a.id:05d}"
@@ -237,7 +257,9 @@ def patch_app(app_id: int, body: ApplicationPatch, u: User = Depends(client_only
     _editable(a)
     data = body.model_dump(exclude_unset=True)
     code, amount, term = data.get("product_code", a.product_code), data.get("amount", a.amount), data.get("term_months", a.term_months)
-    _limits(code, amount, term)
+    _limits(code, amount, term, product_for(a) if code == a.product_code else None)
+    if code != a.product_code:
+        a.product_snapshot = dict(PRODUCTS[code])
     a.product_code, a.amount, a.term_months = code, amount, term
     for k in ("purpose", "has_collateral", "collateral_note", "wizard_step"):
         if k in data:
@@ -334,6 +356,17 @@ def patch_extraction(ext_id: int, body: ExtractionPatch, u: User = Depends(clien
     return ser.detail(a, u)
 
 
+@router.post("/applications/{app_id}/retry", tags=["client"])
+def retry_processing(app_id: int, u: User = Depends(client_only), db: Session = Depends(get_db)):
+    from ..services.workflow import AUTO_STATUSES
+    a = _get(db, u, app_id)
+    if a.status not in AUTO_STATUSES or a.processing:
+        raise HTTPException(409, "Повторная обработка сейчас недоступна")
+    pipeline.launch(db, a)
+    db.refresh(a)
+    return ser.detail(a, u)
+
+
 @router.post("/applications/{app_id}/submit", tags=["client"])
 def submit(app_id: int, u: User = Depends(client_only), db: Session = Depends(get_db)):
     a = _get(db, u, app_id)
@@ -341,6 +374,8 @@ def submit(app_id: int, u: User = Depends(client_only), db: Session = Depends(ge
         raise HTTPException(409, "Заявка уже отправлена")
     if a.company is None:
         raise HTTPException(422, "Укажите компанию по ИНН")
+    if product_for(a).get("public_conditions") and product_for(a)["eligibility"]["collateral"] == "required" and not a.has_collateral:
+        raise HTTPException(422, "Для выбранной программы необходимо обеспечение")
     if docs_svc.has_open_conflicts(a):
         raise HTTPException(422, "Есть данные с пометкой «Требует проверки» — исправьте или подтвердите их")
     transition(db, a, "SUBMITTED", "Заявка отправлена в банк", actor=u.name)
@@ -362,11 +397,16 @@ def answer(app_id: int, rid: int, body: AnswerIn, u: User = Depends(client_only)
         scope, _, name = k.partition(".")
         if scope == "financials":
             try:
-                a.financials = {**a.financials, name: None if v in (None, "") else int(float(v))}
-            except ValueError:
+                from pydantic import ValidationError
+                values = Financials(**{**a.financials, name: None if v in (None, "") else v})
+                a.financials = values.model_dump()
+            except (ValueError, TypeError, ValidationError):
                 raise HTTPException(422, "Сумма должна быть числом")
         elif scope == "contact":
-            a.contact = {**a.contact, name: v}
+            try:
+                a.contact = Contact(**{**a.contact, name: v}).model_dump()
+            except ValueError:
+                raise HTTPException(422, "Проверьте контактные данные")
         else:
             a.purpose = str(v)
     have = {d.kind for d in a.documents if d.status != "rejected"}
@@ -418,8 +458,8 @@ def decline(app_id: int, body: DeclineIn | None = None, u: User = Depends(client
 def sign_loan(db: Session, a: Application) -> None:
     o = next(x for x in a.offers if x.status == "accepted")
     a.loan = Loan(application_id=a.id, contract_number=f"АБ-КД-{datetime.now().year}-{a.id:05d}", amount=o.amount, rate=o.rate, term_months=o.term_months)
-    log(db, a, "sign", "Договор подписан электронной подписью (демо)", actor=a.company.name)
-    transition(db, a, "DISBURSED", "Кредит выдан", f"Сумма {o.amount} ₽ зачислена на расчётный счёт (симуляция)")
+    log(db, a, "sign", "Подтверждено ознакомление с договором", actor=a.company.name)
+    transition(db, a, "DISBURSED", "Кредит выдан", f"Сумма {o.amount} ₽ зачислена на расчётный счёт")
     notify(db, a.owner_id, a, f"Заявка {a.number}: кредит выдан")
 
 
@@ -495,6 +535,8 @@ def review_doc(app_id: int, doc_id: int, body: DocReviewIn, u: User = Depends(ba
     d = next((x for x in a.documents if x.id == doc_id), None)
     if not d:
         raise HTTPException(404, "Документ не найден")
+    if a.status not in ("MANUAL_REVIEW", "NEEDS_INFO") or a.processing:
+        raise HTTPException(409, "Документы можно проверять только при рассмотрении заявки")
     d.status, d.review_comment = body.status, body.comment
     log(db, a, "doc_review", f"Документ «{DOC_KINDS[d.kind]}»: {'принят' if d.status == 'verified' else 'отклонён'}", body.comment, u.name,
         client_visible=d.status == "rejected")
@@ -544,8 +586,8 @@ def decision(app_id: int, body: DecisionIn, u: User = Depends(underwriter_only),
         term = a.term_months if body.type == "approve" else body.term_months
         if not amount or not term:
             raise HTTPException(422, "Укажите сумму и срок")
-        _limits(a.product_code, amount, term)
-        p = PRODUCTS[a.product_code]
+        _limits(a.product_code, amount, term, product_for(a))
+        p = product_for(a)
         rate = body.rate if body.rate is not None else offers_svc.rate_for(p, sc.grade, a.has_collateral)
         bki_pay = sum(l["monthly_payment"] for l in pipeline._latest(a, "bki").get("active_loans", []))
         _, _, free = offers_svc.available_cash(a.financials, bki_pay)

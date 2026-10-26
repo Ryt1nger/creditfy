@@ -27,8 +27,8 @@ def grade_of(score: int) -> str:
     return "A" if score >= 700 else "B" if score >= 620 else "C" if score >= 540 else "D" if score >= 460 else "E"
 
 
-def score_application(product_code: str, amount: int, has_collateral: bool, fin: dict, egrul: dict, bki: dict, pb: dict) -> ScoreOut:
-    product = PRODUCTS[product_code]
+def score_application(product_code: str, amount: int, has_collateral: bool, fin: dict, egrul: dict, bki: dict, pb: dict, product: dict | None = None) -> ScoreOut:
+    product = product or PRODUCTS[product_code]
     factors, stops, flags = [], [], []
     pts = BASE
 
@@ -44,8 +44,8 @@ def score_application(product_code: str, amount: int, has_collateral: bool, fin:
     # ── стоп-факторы политики ──
     if egrul["status"] != "active":
         stops.append({"code": "company_status", "name": "Компания ликвидируется или ликвидирована"})
-    if egrul["age_months"] < 6:
-        stops.append({"code": "company_age", "name": "Бизнесу меньше 6 месяцев"})
+    if egrul["age_months"] < product.get("eligibility", {}).get("min_business_age_months", 6):
+        stops.append({"code": "company_age", "name": "Возраст бизнеса меньше минимального для программы"})
     if bki["max_overdue_days_24m"] > 90:
         stops.append({"code": "credit_history", "name": f"Просрочка {bki['max_overdue_days_24m']} дн. за 24 месяца"})
     if pb["tax_debt"] > 100_000 and pb["tax_debt"] > 0.05 * revenue:

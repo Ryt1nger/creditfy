@@ -6,6 +6,7 @@ from .documents.parsers import FIELD_LABELS
 from .documents.service import has_open_conflicts, review_fields
 from .models import Application, User, now
 from .products import DOC_KINDS, PRODUCTS, REJECT_REASONS
+from .product_snapshot import product_for
 from .services import offers as offers_svc
 from .services.pipeline import _latest
 from .services.workflow import CLIENT_STEPS, status_info
@@ -36,7 +37,7 @@ def summary(a: Application) -> dict:
     o, sc = current_offer(a), (a.scores[-1] if a.scores else None)
     return {
         "id": a.id, "number": a.number, "company_name": a.company.name if a.company else "Компания не указана", "product_code": a.product_code,
-        "product_name": PRODUCTS[a.product_code]["name"], "amount": a.amount, "term_months": a.term_months,
+        "product_name": product_for(a)["name"], "amount": a.amount, "term_months": a.term_months,
         **{k: v for k, v in status_info(a.status).items()}, "status_label": status_info(a.status)["label"],
         "processing": a.processing, "wizard_step": a.wizard_step, "created_at": iso(a.created_at), "updated_at": iso(a.updated_at), "decision": a.decision,
         "offer": {"amount": o.amount, "term_months": o.term_months, "rate": o.rate, "monthly_payment": o.monthly_payment} if o else None,
@@ -62,7 +63,7 @@ def _score(sr):
 
 
 def ai_summary(a: Application, sc: dict | None) -> dict:
-    ctx = {"company": {**_company(a)}, "application": {"amount": a.amount, "term_months": a.term_months, "product": PRODUCTS[a.product_code]["name"]}, "score": sc}
+    ctx = {"company": (_company(a) or {"name": "Компания не указана", "inn": "—"}), "application": {"amount": a.amount, "term_months": a.term_months, "product": product_for(a)["name"]}, "score": sc}
     r = get_provider().summarize_for_underwriter(ctx)
     return {"text": r.text, "source": r.source, "is_stub": r.is_stub}
 
@@ -70,10 +71,11 @@ def ai_summary(a: Application, sc: dict | None) -> dict:
 def detail(a: Application, user: User) -> dict:
     bank = user.role != "client"
     have = {d.kind for d in a.documents if d.status != "rejected"}
-    need = list(PRODUCTS[a.product_code]["docs"]) + (["collateral_doc"] if a.has_collateral else [])
+    need = list(product_for(a)["docs"]) + (["collateral_doc"] if a.has_collateral else [])
     hint = status_info(a.status)["hint"]
     expl = get_provider().explain_status_for_client({"fallback": hint})
     d = {
+        "product": {**product_for(a), "docs": [{"kind": k, "label": DOC_KINDS[k]} for k in product_for(a)["docs"]]},
         **summary(a), "steps": CLIENT_STEPS, "company": _company(a), "purpose": a.purpose, "has_collateral": a.has_collateral,
         "collateral_note": a.collateral_note, "financials": a.financials, "contact": a.contact,
         "documents": [{"id": x.id, "kind": x.kind, "label": DOC_KINDS.get(x.kind, x.kind), "filename": x.filename, "size": x.size,
@@ -112,6 +114,6 @@ def detail(a: Application, user: User) -> dict:
             "score": sc, "ai_summary": ai_summary(a, sc), "suggested_offer": sug,
             "reject_reasons": [{"code": k, "label": v} for k, v in REJECT_REASONS.items()],
             "can_decide": user.role == "underwriter" and a.status == "MANUAL_REVIEW",
-            "can_edit_docs": a.status not in ("DISBURSED", "REJECTED", "CANCELLED"),
+            "can_edit_docs": a.status in ("MANUAL_REVIEW", "NEEDS_INFO") and not a.processing,
         }
     return d

@@ -1,0 +1,549 @@
+{
+  "title": "Публичные кредитные предложения Альфа-Банка для ИП и малого бизнеса — исследовательский каталог Creditfy",
+  "verified_on": "2026-10-26",
+  "scope": "МСП/ИП/ООО; не включает розничные кредиты физлицам и корпоративные договоры с индивидуальными тарифами",
+  "important": "Не является официальным тарифным справочником или публичной офертой. Условия индивидуальны, меняются и могут зависеть от обеспечения, подписки, страховки, региона, кредитной истории и даты обращения.",
+  "meaning_of_null": "Нет надежно подтверждённой цифры для этого поля; запрещено заменять ноль/выдуманным значением.",
+  "rate_rule": "Годовую ставку от % нельзя приравнивать к утвержденной ставке конкретному клиенту; скидочные ставки показывать только рядом с условиями скидки.",
+  "products": [
+    {
+      "code": "business_unsecured",
+      "name": "Бизнес-кредит одной суммой без залога",
+      "kind": "lump_sum",
+      "display_group": "credit",
+      "currency": "RUB",
+      "amount_min_rub": 300000,
+      "amount_max_rub": 30000000,
+      "term_min_months": 12,
+      "term_max_months": 60,
+      "rate_regular_from_apr_pct": 23.5,
+      "rate_conditional_from_apr_pct": 14.0,
+      "conditional_rate_requirements": "Сниженная ставка при оформлении Защиты бизнеса и Подписки",
+      "rate_type": "annual_apr",
+      "goals": [
+        "working_capital",
+        "investment",
+        "equipment",
+        "refinance"
+      ],
+      "collateral": "none",
+      "min_business_age_months": 9,
+      "term_explanation": "",
+      "conditions_notes": "Для ИП поручители не требуются; для ООО нужен минимум один поручитель-собственник. 0 ₽ за выдачу. Погашение аннуитетное или дифференцированное.",
+      "source_urls": [
+        "https://alfabank.ru/sme/profits/businesscredit/"
+      ],
+      "source_confidence": "high",
+      "verified_on": "2026-10-26",
+      "is_offer": false
+    },
+    {
+      "code": "business_secured",
+      "name": "Бизнес-кредит одной суммой с залогом",
+      "kind": "lump_sum",
+      "display_group": "credit",
+      "currency": "RUB",
+      "amount_min_rub": 500000,
+      "amount_max_rub": 150000000,
+      "term_min_months": 12,
+      "term_max_months": 120,
+      "rate_regular_from_apr_pct": 21.5,
+      "rate_conditional_from_apr_pct": 14.0,
+      "conditional_rate_requirements": "Сниженная ставка при оформлении Защиты бизнеса и Подписки",
+      "rate_type": "annual_apr",
+      "goals": [
+        "working_capital",
+        "investment",
+        "equipment",
+        "property",
+        "refinance"
+      ],
+      "collateral": "required",
+      "min_business_age_months": 9,
+      "term_explanation": "",
+      "conditions_notes": "Возможны разные виды залога; необеспеченная часть — до 50% суммы. Поручительство определяется формой заёмщика и размером кредита.",
+      "source_urls": [
+        "https://alfabank.ru/sme/profits/businesscredit/"
+      ],
+      "source_confidence": "high",
+      "verified_on": "2026-10-26",
+      "is_offer": false
+    },
+    {
+      "code": "revolving_unsecured",
+      "name": "Возобновляемая кредитная линия без залога",
+      "kind": "revolving_line",
+      "display_group": "credit",
+      "currency": "RUB",
+      "amount_min_rub": 300000,
+      "amount_max_rub": 30000000,
+      "term_min_months": null,
+      "term_max_months": null,
+      "rate_regular_from_apr_pct": 23.5,
+      "rate_conditional_from_apr_pct": 14.5,
+      "conditional_rate_requirements": "Ставка с платной подпиской на кредитную линию",
+      "rate_type": "annual_apr",
+      "goals": [
+        "working_capital",
+        "cash_gap"
+      ],
+      "collateral": "none",
+      "min_business_age_months": 9,
+      "term_explanation": "Основной договор 18 месяцев с возможностью автоматического продления; отдельные транши на 1–6 мес., с подпиской до 12 мес. НЕЛЬЗЯ показывать бессрочный договор как срок одного транша.",
+      "conditions_notes": "Транши от 50 000 ₽; срок отдельного транша 1–6 мес., с подпиской до 12 мес. Отсутствие залога не отменяет возможное поручительство для ООО.",
+      "source_urls": [
+        "https://alfabank.ru/sme/profits/creditline/adv/",
+        "https://alfabank.ru/sme/profits/businesscredit/"
+      ],
+      "source_confidence": "high",
+      "verified_on": "2026-10-26",
+      "is_offer": false
+    },
+    {
+      "code": "revolving_secured",
+      "name": "Возобновляемая кредитная линия с залогом",
+      "kind": "revolving_line",
+      "display_group": "credit",
+      "currency": "RUB",
+      "amount_min_rub": 500000,
+      "amount_max_rub": 50000000,
+      "term_min_months": null,
+      "term_max_months": 36,
+      "rate_regular_from_apr_pct": 23.0,
+      "rate_conditional_from_apr_pct": 18.5,
+      "conditional_rate_requirements": "Ставка с Защитой бизнеса",
+      "rate_type": "annual_apr",
+      "goals": [
+        "working_capital"
+      ],
+      "collateral": "required",
+      "min_business_age_months": 9,
+      "term_explanation": "Транш на 6 месяцев; период выборки заканчивается за 6 месяцев до окончания договора.",
+      "conditions_notes": "В профильной странице лимит до 50 млн ₽ и срок до 36 мес. На общей странице бизнес-кредитов указаны 60 млн ₽ и 60 мес. Требуется подтверждение тарифа до публичного обещания; выбрана осторожная профильная версия.",
+      "source_urls": [
+        "https://alfabank.ru/sme/profits/creditline/adv/",
+        "https://alfabank.ru/sme/profits/businesscredit/"
+      ],
+      "source_confidence": "conflicting_official_pages",
+      "verified_on": "2026-10-26",
+      "is_offer": false
+    },
+    {
+      "code": "nonrevolving_secured",
+      "name": "Невозобновляемая кредитная линия с залогом",
+      "kind": "nonrevolving_line",
+      "display_group": "credit",
+      "currency": "RUB",
+      "amount_min_rub": 500000,
+      "amount_max_rub": 50000000,
+      "term_min_months": null,
+      "term_max_months": 60,
+      "rate_regular_from_apr_pct": 22.0,
+      "rate_conditional_from_apr_pct": 17.5,
+      "conditional_rate_requirements": "Ставка с Защитой бизнеса",
+      "rate_type": "annual_apr",
+      "goals": [
+        "working_capital",
+        "investment",
+        "equipment"
+      ],
+      "collateral": "required",
+      "min_business_age_months": 9,
+      "term_explanation": "Период выборки — первые 6 месяцев после открытия кредитной линии.",
+      "conditions_notes": "На профильной странице указано до 50 млн ₽, на общей — до 60 млн ₽; в каталоге использовано консервативное 50 млн ₽. Погашенные суммы НЕ восстанавливают лимит.",
+      "source_urls": [
+        "https://alfabank.ru/sme/profits/creditline/adv/",
+        "https://alfabank.ru/sme/profits/businesscredit/"
+      ],
+      "source_confidence": "conflicting_official_pages",
+      "verified_on": "2026-10-26",
+      "is_offer": false
+    },
+    {
+      "code": "overdraft",
+      "name": "Овердрафт для бизнеса",
+      "kind": "overdraft",
+      "display_group": "credit",
+      "currency": "RUB",
+      "amount_min_rub": 50000,
+      "amount_max_rub": 20000000,
+      "term_min_months": null,
+      "term_max_months": null,
+      "rate_regular_from_apr_pct": 26.0,
+      "rate_conditional_from_apr_pct": 13.0,
+      "conditional_rate_requirements": "13% от — только с платной подпиской; комиссия 1%, 2%, 3% или 5% от лимита",
+      "rate_type": "annual_apr",
+      "goals": [
+        "cash_gap",
+        "working_capital"
+      ],
+      "collateral": "none",
+      "min_business_age_months": 9,
+      "term_explanation": "Договор 12 месяцев с автоматическим продлением. Каждый транш погашается за 60 дней; с подпиской — до 90 дней.",
+      "conditions_notes": "Не равен обычному аннуитетному кредиту: проценты за дни фактического пользования; лимит зависит от оборотов; без подписки пересматривается ежемесячно.",
+      "source_urls": [
+        "https://alfabank.ru/sme/profits/overdraft/"
+      ],
+      "source_confidence": "high",
+      "verified_on": "2026-10-26",
+      "is_offer": false
+    },
+    {
+      "code": "money_lump",
+      "name": "Деньги на дело — кредит под залог",
+      "kind": "secured_business",
+      "display_group": "credit",
+      "currency": "RUB",
+      "amount_min_rub": null,
+      "amount_max_rub": 150000000,
+      "term_min_months": null,
+      "term_max_months": 120,
+      "rate_regular_from_apr_pct": 21.5,
+      "rate_conditional_from_apr_pct": 15.5,
+      "conditional_rate_requirements": "Ставки от 21,5%/15,5% для сделки с долей недвижимости в залоге более 50%; при доле менее 50% от 25,5%/19,5%; скидка с Защитой бизнеса",
+      "rate_type": "annual_apr",
+      "goals": [
+        "investment",
+        "equipment",
+        "business_launch",
+        "working_capital"
+      ],
+      "collateral": "required",
+      "min_business_age_months": 0,
+      "term_explanation": "До 120 мес. при залоге недвижимости, до 60 мес. при залоге транспорта/спецтехники.",
+      "conditions_notes": "Под залог недвижимости и/или транспорта; для бизнеса с нулевого срока регистрации. Указаны условия основной страницы «Деньги на дело». Верхний срок 10 лет — с недвижимостью, 5 лет — с транспортом.",
+      "source_urls": [
+        "https://alfabank.ru/sme/profits/lombardnyj_kredit/"
+      ],
+      "source_confidence": "high",
+      "verified_on": "2026-10-26",
+      "is_offer": false
+    },
+    {
+      "code": "money_universal_line",
+      "name": "Деньги на дело — универсальная кредитная линия",
+      "kind": "universal_secured_line",
+      "display_group": "credit",
+      "currency": "RUB",
+      "amount_min_rub": null,
+      "amount_max_rub": 50000000,
+      "term_min_months": null,
+      "term_max_months": 120,
+      "rate_regular_from_apr_pct": 21.5,
+      "rate_conditional_from_apr_pct": 15.5,
+      "conditional_rate_requirements": "Пример для недвижимости >50% в составе залога и с Защитой бизнеса; применяются разные ставки по структуре залога",
+      "rate_type": "annual_apr",
+      "goals": [
+        "investment",
+        "business_launch",
+        "working_capital"
+      ],
+      "collateral": "required",
+      "min_business_age_months": 0,
+      "term_explanation": "До 120 мес. при графике с равномерным погашением; до 36 мес. при погашении тела кредита в конце.",
+      "conditions_notes": "Лимит восстанавливается при погашении, возможно погашение основного долга в конце срока (до 36 мес. в такой конфигурации). Индивидуальное решение банка.",
+      "source_urls": [
+        "https://alfabank.ru/sme/profits/lombardnyj_kredit/"
+      ],
+      "source_confidence": "conditional_from_main_page",
+      "verified_on": "2026-10-26",
+      "is_offer": false
+    },
+    {
+      "code": "business_mortgage",
+      "name": "Бизнес-ипотека",
+      "kind": "commercial_mortgage",
+      "display_group": "credit",
+      "currency": "RUB",
+      "amount_min_rub": null,
+      "amount_max_rub": 150000000,
+      "term_min_months": null,
+      "term_max_months": 120,
+      "rate_regular_from_apr_pct": 23.0,
+      "rate_conditional_from_apr_pct": 18.5,
+      "conditional_rate_requirements": "Скидка до 4,5 п.п. при Защите бизнеса (расчётная нижняя граница, не гарантированный тариф)",
+      "rate_type": "annual_apr",
+      "goals": [
+        "property"
+      ],
+      "collateral": "required",
+      "min_business_age_months": 9,
+      "term_explanation": "",
+      "conditions_notes": "Для покупки коммерческой/жилой недвижимости; недвижимость — предмет залога; первоначальный взнос не обязателен; проверка места объекта и продавца.",
+      "source_urls": [
+        "https://alfabank.ru/sme/profits/businessipoteka/"
+      ],
+      "source_confidence": "derived_promo_from_discount",
+      "verified_on": "2026-10-26",
+      "is_offer": false
+    },
+    {
+      "code": "business_auto",
+      "name": "Автокредит для бизнеса",
+      "kind": "vehicle_financing",
+      "display_group": "credit",
+      "currency": "RUB",
+      "amount_min_rub": null,
+      "amount_max_rub": 50000000,
+      "term_min_months": null,
+      "term_max_months": 120,
+      "rate_regular_from_apr_pct": 22.0,
+      "rate_conditional_from_apr_pct": 17.5,
+      "conditional_rate_requirements": "Ставка от 17,5% при Защите бизнеса; КАСКО и Защита — по желанию",
+      "rate_type": "annual_apr",
+      "goals": [
+        "vehicle",
+        "equipment"
+      ],
+      "collateral": "vehicle",
+      "min_business_age_months": null,
+      "term_explanation": "",
+      "conditions_notes": "Без обязательного первоначального взноса и поручителей; новые и б/у автомобили, спецтехника; до 5 ТС на кредит; отсрочка погашения до 6 месяцев.",
+      "source_urls": [
+        "https://alfabank.ru/sme/profits/autocredit/"
+      ],
+      "source_confidence": "high",
+      "verified_on": "2026-10-26",
+      "is_offer": false
+    },
+    {
+      "code": "refin_unsecured",
+      "name": "Рефинансирование бизнес-кредитов без залога",
+      "kind": "refinancing",
+      "display_group": "credit",
+      "currency": "RUB",
+      "amount_min_rub": 300000,
+      "amount_max_rub": 30000000,
+      "term_min_months": 12,
+      "term_max_months": 60,
+      "rate_regular_from_apr_pct": null,
+      "rate_conditional_from_apr_pct": 19.0,
+      "conditional_rate_requirements": "От 19% при оформлении Защиты бизнеса; от 14% при Защите бизнеса И Подписке (общая реклама рефинансирования)",
+      "rate_type": "annual_apr",
+      "goals": [
+        "refinance"
+      ],
+      "collateral": "none",
+      "min_business_age_months": 9,
+      "term_explanation": "",
+      "conditions_notes": "Базовая ставка без дополнительных услуг на странице рефинансирования не зафиксирована. Нельзя рефинансировать овердрафт, кредитные карты и отдельные исключённые кредиты.",
+      "source_urls": [
+        "https://alfabank.ru/sme/profits/refin/"
+      ],
+      "source_confidence": "high",
+      "verified_on": "2026-10-26",
+      "is_offer": false
+    },
+    {
+      "code": "refin_secured",
+      "name": "Рефинансирование бизнес-кредитов с залогом",
+      "kind": "refinancing",
+      "display_group": "credit",
+      "currency": "RUB",
+      "amount_min_rub": 500000,
+      "amount_max_rub": 150000000,
+      "term_min_months": 12,
+      "term_max_months": 120,
+      "rate_regular_from_apr_pct": null,
+      "rate_conditional_from_apr_pct": 17.0,
+      "conditional_rate_requirements": "От 17% с Защитой бизнеса; от 14% при комбинации Защиты бизнеса и Подписки (общая реклама)",
+      "rate_type": "annual_apr",
+      "goals": [
+        "refinance"
+      ],
+      "collateral": "required",
+      "min_business_age_months": 9,
+      "term_explanation": "",
+      "conditions_notes": "Базовая ставка без допуслуг на странице не указана. Возможно изменение графика и объединение нескольких кредитов.",
+      "source_urls": [
+        "https://alfabank.ru/sme/profits/refin/"
+      ],
+      "source_confidence": "high",
+      "verified_on": "2026-10-26",
+      "is_offer": false
+    },
+    {
+      "code": "seller_credit",
+      "name": "Альфа-Селлер Кредит",
+      "kind": "seller_revolving_line",
+      "display_group": "credit",
+      "currency": "RUB",
+      "amount_min_rub": null,
+      "amount_max_rub": 20000000,
+      "term_min_months": 1,
+      "term_max_months": 12,
+      "rate_regular_from_apr_pct": null,
+      "rate_conditional_from_apr_pct": 14.5,
+      "conditional_rate_requirements": "Сниженная годовая ставка от 14,5% при подписке и Защите бизнеса",
+      "rate_type": "annual_apr",
+      "goals": [
+        "marketplace",
+        "working_capital"
+      ],
+      "collateral": "none",
+      "min_business_age_months": null,
+      "term_explanation": "Отдельные транши можно погашать за 1–12 мес. Договор лимита возобновляется.",
+      "conditions_notes": "На странице показана переплата от 1,2% ЗА МЕСЯЦ в одном из примеров — это НЕ годовая кредитная ставка. Не выводить «1,2% годовых». Договор кредитной линии автоматически продлевается.",
+      "source_urls": [
+        "https://alfabank.ru/sme/profits/creditsellers/"
+      ],
+      "source_confidence": "annual_rate_promo_only",
+      "verified_on": "2026-10-26",
+      "is_offer": false
+    },
+    {
+      "code": "business_one_credit",
+      "name": "Business One Credit",
+      "kind": "credit_card",
+      "display_group": "credit",
+      "currency": "RUB",
+      "amount_min_rub": 50000,
+      "amount_max_rub": 1000000,
+      "term_min_months": null,
+      "term_max_months": null,
+      "rate_regular_from_apr_pct": null,
+      "rate_conditional_from_apr_pct": null,
+      "conditional_rate_requirements": "Льготный период до 120 дней — тариф «Выгодный»; до 60 дней — «Базовый» и «Премиальный»",
+      "rate_type": "individual_not_published",
+      "goals": [
+        "working_capital",
+        "payments"
+      ],
+      "collateral": "none",
+      "min_business_age_months": null,
+      "term_explanation": "Возобновляемый карточный лимит; грейс-период 60 или 120 дней зависит от тарифа.",
+      "conditions_notes": "Годовая ставка вне льготного периода не подтверждена в исследованных материалах; не рассчитывать аннуитет по 0%. Полное погашение к концу грейса обязательно для сохранения льготы.",
+      "source_urls": [
+        "https://alfabank.ru/sme/profits/creditcard/"
+      ],
+      "source_confidence": "high",
+      "verified_on": "2026-10-26",
+      "is_offer": false
+    },
+    {
+      "code": "investment_credit",
+      "name": "Инвестиционный кредит (целевое применение)",
+      "kind": "purpose_based_investment",
+      "display_group": "credit",
+      "currency": "RUB",
+      "amount_min_rub": null,
+      "amount_max_rub": 150000000,
+      "term_min_months": 12,
+      "term_max_months": 120,
+      "rate_regular_from_apr_pct": 22.5,
+      "rate_conditional_from_apr_pct": null,
+      "conditional_rate_requirements": "На отдельном лендинге в шапке ставка 22,5%; внутри того же лендинга встречаются более низкие цифры 16,5%/15% — противоречивые рекламные значения",
+      "rate_type": "annual_apr",
+      "goals": [
+        "investment",
+        "equipment",
+        "property"
+      ],
+      "collateral": "optional",
+      "min_business_age_months": 9,
+      "term_explanation": "",
+      "conditions_notes": "Это скорее сценарий/цель для кредитов одной суммой или невозобновляемой линии. Не создавать отдельную независимую скоринговую программу без правил. Не использовать 16,5% как гарантированную текущую ставку.",
+      "source_urls": [
+        "https://alfabank.ru/sme/profits/kredit-investicionnyy/",
+        "https://alfabank.ru/sme/profits/businesscredit/"
+      ],
+      "source_confidence": "contradictory_same_official_page",
+      "verified_on": "2026-10-26",
+      "is_offer": false
+    },
+    {
+      "code": "equipment_credit",
+      "name": "Кредит на оборудование (целевое применение)",
+      "kind": "purpose_based_equipment",
+      "display_group": "credit",
+      "currency": "RUB",
+      "amount_min_rub": 300000,
+      "amount_max_rub": 150000000,
+      "term_min_months": 12,
+      "term_max_months": 120,
+      "rate_regular_from_apr_pct": null,
+      "rate_conditional_from_apr_pct": 14.0,
+      "conditional_rate_requirements": "От 14% со скидками для одной суммы; базовая ставка зависит от залога (от 23,5% без, от 21,5% с залогом)",
+      "rate_type": "annual_apr",
+      "goals": [
+        "equipment"
+      ],
+      "collateral": "optional",
+      "min_business_age_months": 9,
+      "term_explanation": "",
+      "conditions_notes": "Оборудование — цель базовых бизнес-кредитов, а не обязательно отдельная тарифная линейка. Лимит 150 млн применим только к залоговому варианту; без залога до 30 млн.",
+      "source_urls": [
+        "https://alfabank.ru/sme/profits/kredit-na-oborudovanie/",
+        "https://alfabank.ru/sme/profits/businesscredit/"
+      ],
+      "source_confidence": "variant_of_core_products",
+      "verified_on": "2026-10-26",
+      "is_offer": false
+    }
+  ],
+  "other_financing_not_loans": [
+    {
+      "name": "Факторинг: открытый",
+      "kind": "factoring_not_credit",
+      "amount_min_rub": null,
+      "amount_max_rub": null,
+      "annual_rate_apr_from_pct": null,
+      "term_days_max": 365,
+      "details": "Финансирование до 100% суммы поставки, оплата комиссии за фактический срок, ставка индивидуальная, не кредит по классификации банка",
+      "source_url": "https://alfabank.ru/sme/profits/factoring/"
+    },
+    {
+      "name": "Факторинг: закрытый",
+      "kind": "factoring_not_credit",
+      "amount_min_rub": null,
+      "amount_max_rub": null,
+      "annual_rate_apr_from_pct": null,
+      "term_days_max": 180,
+      "details": "Финансирование до 90% поставки, ставка индивидуальная, не кредит",
+      "source_url": "https://alfabank.ru/sme/profits/factoring/"
+    },
+    {
+      "name": "Электронная банковская гарантия",
+      "kind": "guarantee_not_credit",
+      "amount_min_rub": null,
+      "amount_max_rub": 300000000,
+      "annual_rate_apr_from_pct": null,
+      "term_days_max": null,
+      "details": "Комиссия от 1 500 ₽, отдельный продукт, не кредит для расчёта платежа",
+      "source_url": "https://alfabank.ru/sme/guarantee/"
+    },
+    {
+      "name": "Гарантия возмещения НДС",
+      "kind": "guarantee_not_credit",
+      "amount_min_rub": null,
+      "amount_max_rub": 100000000,
+      "annual_rate_apr_from_pct": null,
+      "term_days_max": null,
+      "details": "Срок от 11 до 12 месяцев, отдельный гарантийный продукт",
+      "source_url": "https://alfabank.ru/sme/guarantee/"
+    }
+  ],
+  "sources": {
+    "all": "https://alfabank.ru/sme/profits/",
+    "business": "https://alfabank.ru/sme/profits/businesscredit/",
+    "line": "https://alfabank.ru/sme/profits/creditline/adv/",
+    "overdraft": "https://alfabank.ru/sme/profits/overdraft/",
+    "money": "https://alfabank.ru/sme/profits/lombardnyj_kredit/",
+    "mortgage": "https://alfabank.ru/sme/profits/businessipoteka/",
+    "auto": "https://alfabank.ru/sme/profits/autocredit/",
+    "refin": "https://alfabank.ru/sme/profits/refin/",
+    "seller": "https://alfabank.ru/sme/profits/creditsellers/",
+    "card": "https://alfabank.ru/sme/profits/creditcard/",
+    "factoring": "https://alfabank.ru/sme/profits/factoring/",
+    "guarantee": "https://alfabank.ru/sme/guarantee/",
+    "investment": "https://alfabank.ru/sme/profits/kredit-investicionnyy/",
+    "equipment": "https://alfabank.ru/sme/profits/kredit-na-oborudovanie/"
+  },
+  "conflicts": [
+    "Залоговая ВКЛ и НКЛ: общая страница «Бизнес-кредит» указывает 60 млн ₽ (иногда 60 месяцев для ВКЛ), специализированная «Возобновляемая кредитная линия» — 50 млн ₽ и 36 месяцев для залоговой ВКЛ. В каталоге взята более осторожная профильная версия; пометить как требующую подтверждения.",
+    "Программа «Деньги на дело»: отдельные старые/переходные информационные страницы указывают до 50 млн ₽, основная актуально извлечённая посадочная — до 150 млн ₽ для разового кредита и до 50 млн ₽ для универсальной линии.",
+    "Инвестиционный кредит: разные ставки указаны даже на одной официальной странице; не использовать его в автоматическом ценообразовании до верификации.",
+    "Для Business One Credit опубликованы отличающиеся сроки беспроцентного периода в материалах разных версий; в каталоге указан вариант тарифозависимый 60/120 дней с профильной страницы.",
+    "Селлер кредит: 1,2% — рекламная месячная переплата, не годовой APR. Не смешивать с 14,5% годовых с дополнительными условиями."
+  ]
+}

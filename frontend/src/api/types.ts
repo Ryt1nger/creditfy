@@ -8,6 +8,7 @@ export interface Product {
   min_amount: number; max_amount: number; min_term: number; max_term: number
   base_rate: number; fee_pct: number; allows_collateral: boolean
   docs: { kind: string; label: string }[]
+  conditional_rate?: number | null; discount_conditions?: string; source_url?: string; verified_on?: string; public_conditions?: boolean; term_explanation?: string
   goals?: string[]; disclaimer?: string
   eligibility?: { forms: string[]; min_business_age_months: number; collateral: 'optional' | 'required' | 'none'; collateral_required_from: number | null }
 }
@@ -81,6 +82,7 @@ export interface BankExtras {
   can_edit_docs: boolean
 }
 export interface ApplicationDetail extends ApplicationSummary {
+  product?: Product
   steps: string[]
   company: CompanyInfo | null
   review: { fields: ReviewField[]; has_conflicts: boolean }
@@ -115,7 +117,7 @@ export interface QuizQuestion {
 }
 export interface PortraitItem { field: string; label: string; value: string | number; value_label: string; source: string }
 export interface Suggestion {
-  code: string; name: string; tagline: string; score: number; amount: number; term_months: number; rate_from: number; monthly_payment: number
+  code: string; name: string; tagline: string; score: number; amount: number; term_months: number; rate_from: number; monthly_payment: number | null
   reasons: string[]; caveats: string[]; docs: { kind: string; label: string }[]
 }
 export interface Recommendations {

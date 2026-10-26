@@ -123,7 +123,7 @@ def test_stats_and_ai_status(client, risk):
     st = client.get("/api/bank/stats", headers=risk).json()
     assert st["total"] >= 7 and st["funnel"][0]["count"] == st["total"]
     ai = client.get("/api/ai/status").json()
-    assert ai["is_stub"] and ai["provider"] == "stub"
+    assert ai["is_stub"] and ai["provider"] == "rules"
 
 
 def test_register_and_login(client):
@@ -135,6 +135,6 @@ def test_register_and_login(client):
     assert client.post("/api/auth/login", json={"email": "new@test.ru", "password": "wrong"}).status_code == 401
     h = {"Authorization": "Bearer " + r.json()["token"]}
     assert client.get("/api/applications", headers=h).json() == []  # чистый кабинет
-    b = client.post("/api/auth/register", json={"name": "Сотрудник Банка", "email": "emp@test.ru", "password": "secret1", "role": "bank"}).json()
-    assert b["user"]["role"] == "underwriter"
+    b = client.post("/api/auth/register", json={"name": "Сотрудник Банка", "email": "emp@test.ru", "password": "secret1", "role": "bank"})
+    assert b.status_code == 422
     assert client.get("/api/auth/demo-accounts").status_code == 404

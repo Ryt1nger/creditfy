@@ -20,10 +20,7 @@ const SRC: Record<string, string> = { text: 'из вашего описания'
 type Reg = { key: string; question: { text: string; hint?: string; options: QuizOption[]; custom?: { placeholder: string } }; type: string; min?: number; max?: number }
 const REG = Object.fromEntries((fields.fields as unknown as Reg[]).map((f) => [f.key, f])) as Record<string, Reg>
 
-function AiTag({ q, ai }: { q: QuizQuestion; ai: IntakeSession['ai'] }) {
-  if (q.source !== 'ai') return <span className="qtag bank">Вопрос из готового банка</span>
-  return <span className="qtag ai"><i />{ai.simulated || q.simulated ? 'Имитация ИИ-формулировки (демо-режим, модели в браузере нет)' : `Вопрос сформулирован локальной моделью · вызовов ${ai.calls_used} из ${ai.max_calls}`}</span>
-}
+function AiTag(_props: { q: QuizQuestion; ai: IntakeSession['ai'] }) { return null }
 
 /** Один вопрос на экране: карточки-ответы или своё число. */
 function Question({ q, ai, step, total, onAnswer, onBack, busy }: { q: QuizQuestion; ai: IntakeSession['ai']; step: number; total: number; onAnswer: (v: string | number) => void; onBack?: () => void; busy: boolean }) {
@@ -58,11 +55,11 @@ function SuggestionCard({ s, main, onPick, busy }: { s: Suggestion; main?: boole
       {main && <span className="demotag">Главный вариант</span>}
       <h3>{SHORT[s.code]?.name ?? s.name}</h3>
       <p className="muted small">{s.tagline}</p>
-      <div className="sugg-nums"><div><small>Сумма</small><b>{rub(s.amount)}</b></div><div><small>Срок</small><b>{months(s.term_months)}</b></div><div><small>Ставка</small><b>от {String(s.rate_from).replace('.', ',')}%</b></div><div><small>Платёж ≈</small><b>{rub(s.monthly_payment)}</b></div></div>
+      <div className="sugg-nums"><div><small>Сумма</small><b>{rub(s.amount)}</b></div><div><small>Срок</small><b>{s.code === 'overdraft' ? 'Транш 60/90 дней' : months(s.term_months)}</b></div><div><small>Ставка</small><b>от {String(s.rate_from).replace('.', ',')}%</b></div><div><small>Платёж ≈</small><b>{s.code === 'overdraft' ? 'По использованию' : rub(s.monthly_payment)}</b></div></div>
       <div><h5>Почему подходит</h5><ul className="ticks">{s.reasons.map((r) => <li key={r}><ICheck size={16} />{r}</li>)}</ul></div>
       {s.caveats.length > 0 && <ul className="caveats">{s.caveats.map((c) => <li key={c}>{c}</li>)}</ul>}
       {main && <div className="small muted">Понадобятся: {s.docs.map((d) => d.label.toLowerCase()).join(', ')}.</div>}
-      <button className={'btn lg ' + (main ? 'primary' : 'white2')} disabled={busy} onClick={onPick}>{main ? 'Оформить этот' : 'Выбрать этот'} <IArrow /></button>
+      <button className={'btn lg ' + (main ? 'primary' : 'white2')} disabled={busy || s.code === 'overdraft'} onClick={onPick}>{s.code === 'overdraft' ? 'Информация о лимите' : main ? 'Оформить этот' : 'Выбрать этот'} <IArrow /></button>
     </article>
   )
 }
@@ -96,6 +93,7 @@ export default function Quiz() {
     return startQuiz(t)
   }
   async function draftFor(code: string, amount?: number, term?: number) {
+    if (code === 'overdraft') { setMore(code); return }
     const a = await run(() => api<ApplicationDetail>('POST', '/applications/draft', { product_code: code, amount, term_months: term }))
     if (a) toWizard(a)
   }
@@ -145,20 +143,20 @@ export default function Quiz() {
         <div className="stack lg swap">
           {help && (
             <section className="helpcard" aria-live="polite">
-              <div className="row between wrap"><span className="qtag ai"><i />Помощник · готовый демо-ответ (без ИИ)</span><button className="linkbtn" onClick={() => setHelp(null)}>Закрыть</button></div>
+              <div className="row between wrap"><span className="qtag ai"><i />Помощник по продуктам</span><button className="linkbtn" onClick={() => setHelp(null)}>Закрыть</button></div>
               {help.q && <div className="hq">{help.q}</div>}
               <p className="hans">{help.answer}</p>
               <div className="chips2" style={{ marginTop: 0 }}>{help.suggestions.map((q) => <button key={q} onClick={() => start(q)}>{q}</button>)}</div>
-              <div className="row wrap" style={{ gap: 14 }}>{help.q && !help.matched ? null : help.q && <button className="btn primary" disabled={busy} onClick={() => startQuiz(help.q)}>Подобрать кредит под мою задачу <IArrow /></button>}<span className="muted small">Условия демонстрационные, не реальные предложения банка.</span></div>
+              <div className="row wrap" style={{ gap: 14 }}>{help.q && !help.matched ? null : help.q && <button className="btn primary" disabled={busy} onClick={() => startQuiz(help.q)}>Подобрать кредит под мою задачу <IArrow /></button>}<span className="muted small">Выбор продукта не гарантирует одобрение.</span></div>
             </section>
           )}
           <div>
             <AssistantBox value={text} onChange={setText} onSubmit={() => text.trim().length >= 3 && start(text)} busy={busy} label="Опиши задачу или задай вопрос о кредитах" />
             <div className="chips2">{CHIPS.map((c) => <button key={c} onClick={() => start(c)}>{c}</button>)}</div>
-            <p className="muted small" style={{ marginTop: 14 }}>Сначала разбираем текст по правилам, затем задаём по одному вопросу карточками. ИИ-модель (если включена) только подсказывает формулировки — подбор и условия считают правила.</p>
+            <p className="muted small" style={{ marginTop: 14 }}>Уточним только то, что нужно для подбора подходящего продукта.</p>
           </div>
           <h2 style={{ fontSize: 26, fontWeight: 700 }}>Или выбери продукт самостоятельно</h2>
-          <div className="pgrid">{products.map((x, i) => <ProductCard i={i} key={x.code} name={SHORT[x.code]?.name ?? x.name} sub={SHORT[x.code]?.sub ?? x.tagline} on={false} onMore={() => setMore(x.code)} onClick={() => draftFor(x.code)} />)}</div>
+          <div className="pgrid">{products.map((x, i) => <ProductCard i={i} key={x.code} name={SHORT[x.code]?.name ?? x.name} sub={SHORT[x.code]?.sub ?? x.tagline} on={false} onMore={() => setMore(x.code)} onClick={() => x.code === 'overdraft' ? setMore(x.code) : draftFor(x.code)} />)}</div>
         </div>
       )}
 

@@ -23,18 +23,23 @@ USERS = [("Иван Соколов", "ivan@demo.ru", "client"), ("Андрей �
 
 
 def seed_demo(db: Session) -> None:
-    if db.scalar(select(User.id).limit(1)):
-        return
     users = {}
     for name, email, role in USERS:
-        u = User(name=name, email=email, role=role, password_hash=hash_password("demo123"))
-        db.add(u)
+        u = db.scalar(select(User).where(User.email == email))
+        if u is None:
+            u = User(name=name, email=email, role=role, password_hash=hash_password("demo123"))
+            db.add(u)
         users[email] = u
-    db.flush()
+    db.commit()
+    missing_owners = {u.id for u in users.values() if not db.scalar(select(Application.id).where(Application.owner_id == u.id).limit(1)) and u.role == "client"}
+    if not missing_owners:
+        return
     from .config import settings
     saved_delay, settings.pipeline_step_delay = settings.pipeline_step_delay, 0  # сидирование без пауз
 
     def mk(owner, sc, code, amount, term, docs=None, collateral=False):
+        if owner.id not in missing_owners:
+            return None
         c = _set_company(db, owner, DEMO_SCENARIOS[sc]["inn"])
         a = Application(number="tmp", owner_id=owner.id, company_id=c.id, product_code=code, amount=amount, term_months=term,
                         purpose="Демонстрационная заявка", has_collateral=collateral, financials=FIN[sc],
@@ -55,18 +60,20 @@ def seed_demo(db: Session) -> None:
 
     ivan, volkov, maria, risk = users["ivan@demo.ru"], users["volkov@demo.ru"], users["maria@demo.ru"], users["risk@demo.ru"]
     a1 = mk(ivan, "strong", "equipment", 1_800_000, 36)
-    o = next(x for x in a1.offers if x.status == "proposed")
-    o.status = "accepted"
-    transition(db, a1, "SIGNING", "Клиент принял предложение", actor=a1.company.name)
-    sign_loan(db, a1)
+    if a1 is not None:
+        o = next(x for x in a1.offers if x.status == "proposed")
+        o.status = "accepted"
+        transition(db, a1, "SIGNING", "Клиент принял предложение", actor=a1.company.name)
+        sign_loan(db, a1)
     mk(ivan, "strong", "investment", 4_000_000, 48, docs=["bank_statement", "tax_return"])
     mk(ivan, "strong", "working_capital", 2_500_000, 24)
     g = mk(volkov, "gray", "working_capital", 1_200_000, 18)
-    g.assigned_to_id = risk.id
+    if g is not None:
+        g.assigned_to_id = risk.id
     mk(volkov, "gray", "overdraft", 600_000, 12)
     mk(volkov, "bad", "working_capital", 3_000_000, 24)
     mk(maria, "tight", "equipment", 4_000_000, 36)
-    for i, a in enumerate(db.scalars(select(Application).order_by(Application.id)).all()):
+    for i, a in enumerate(db.scalars(select(Application).where(Application.owner_id.in_(missing_owners)).order_by(Application.id)).all()):
         shift = timedelta(hours=3.1 * (8 - i))
         a.created_at, a.updated_at = now() - shift - timedelta(hours=4), now() - shift
     db.commit()

@@ -39,3 +39,15 @@ for inn,label in (("500123456750","ИП Волков (с расхождение�
         if not d["processing"]: break
         time.sleep(0.4)
     show(f"  итог: {d['status']} · «{d['status_label']}» · что: {d['what'][:50]}… · действие: {d['needs_action']}")
+
+    expected = "MANUAL_REVIEW" if inn == "500123456750" else "OFFER_READY"
+    assert d["status"] == expected, d
+    if expected == "OFFER_READY":
+        r = c.post(f"/applications/{aid}/offer/accept", headers=H)
+        assert r.status_code == 200 and r.json()["status"] == "SIGNING", r.text
+        r = c.post(f"/applications/{aid}/sign", json={"consent":True}, headers=H)
+        assert r.status_code == 200 and r.json()["status"] == "DISBURSED", r.text
+        loan = r.json()["loan"]
+        assert len(loan["schedule"]) == loan["term_months"]
+        assert abs(sum(x["principal"] for x in loan["schedule"]) - loan["amount"]) <= loan["term_months"]
+        show("подписание, выдача и полный график проверены")

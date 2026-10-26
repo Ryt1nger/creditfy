@@ -62,7 +62,7 @@ function Score({ s }: { s: ScoreInfo }) {
 function Registry({ a }: { a: D }) {
   const e = a.bank!.enrichment; if (!e.egrul) return <section className="card"><h3>Данные из реестров</h3><p className="muted small" style={{ marginTop: 8 }}>Обогащение ещё не выполнялось.</p></section>
   return (
-    <section className="card stack"><h3>Данные из реестров <span className="pill" style={{ marginLeft: 8 }}>симуляторы</span></h3>
+    <section className="card stack"><h3>Данные из реестров </h3>
       <div className="grid g3">
         <div className="stack sm"><b>ЕГРЮЛ / ЕГРИП</b><div className="small">Статус: <b>{e.egrul.status === 'active' ? 'действует' : 'ликвидируется'}</b></div><div className="small">Возраст: {age(e.egrul.age_months)}</div><div className="small">ОГРН: {e.egrul.ogrn}</div><div className="small muted">{e.egrul.okved}</div></div>
         <div className="stack sm"><b>Бюро кредитных историй</b><div className="small">История: {e.bki.has_history ? `${e.bki.history_months} мес.` : 'нет'}</div><div className="small">Макс. просрочка 24 мес.: <b>{e.bki.max_overdue_days_24m} дн.</b></div><div className="small">Действующих кредитов: {e.bki.active_loans.length} · платежи {rub(e.bki.active_loans.reduce((s: number, l: any) => s + l.monthly_payment, 0))}</div><div className="small">Запросов за 6 мес.: {e.bki.inquiries_6m}</div></div>
@@ -90,13 +90,13 @@ export function BankReview() {
       </section>
       <div className="grid" style={{ gridTemplateColumns: 'minmax(0,1fr) 340px', alignItems: 'start' }}>
         <div className="stack">
-          <section className="ai-box stack sm"><div className="row"><ISpark style={{ color: 'var(--purple)' }} /><b>Сводка по заявке</b><span className="pill purple">ИИ-модуль подключается: DeepSeek</span></div><p className="small">{b.ai_summary.text}</p></section>
+          <section className="ai-box stack sm"><div className="row"><ISpark style={{ color: 'var(--purple)' }} /><b>Сводка по заявке</b></div><p className="small">{b.ai_summary.text}</p></section>
           {b.score && <Score s={b.score} />}
           <Registry a={a} />
           <section className="card stack"><h3>Документы</h3>
             {a.documents.length === 0 && <p className="muted small">Документов нет.</p>}
             {a.documents.map((d) => (
-              <div key={d.id} className="docrow"><span className="ico"><IDoc /></span><div className="grow"><div style={{ fontWeight: 600 }}>{d.label}</div><div className="tiny muted">{d.filename} · {fileSize(d.size)} · распознавание: ИИ-модуль позже</div>{d.review_comment && <div className="tiny" style={{ color: 'var(--red)' }}>{d.review_comment}</div>}</div>
+              <div key={d.id} className="docrow"><span className="ico"><IDoc /></span><div className="grow"><div style={{ fontWeight: 600 }}>{d.label}</div><div className="tiny muted">{d.filename} · {fileSize(d.size)} · </div>{d.review_comment && <div className="tiny" style={{ color: 'var(--red)' }}>{d.review_comment}</div>}</div>
                 <span className={'pill ' + (d.status === 'verified' ? 'green' : d.status === 'rejected' ? 'red' : '')}>{d.status === 'verified' ? 'Принят' : d.status === 'rejected' ? 'Отклонён' : 'Проверить'}</span>
                 {b.can_edit_docs && <div className="row" style={{ gap: 6 }}><button className="btn sm light" aria-label="Принять" onClick={() => call(`/documents/${d.id}/review`, { status: 'verified' })}><ICheck size={16} /></button><button className="btn sm light" aria-label="Отклонить" onClick={() => call(`/documents/${d.id}/review`, { status: 'rejected', comment: 'Документ нечитаем или не соответствует' })}><IX size={16} /></button></div>}</div>))}
           </section>

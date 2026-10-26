@@ -2,7 +2,7 @@ import { GRADE_PREMIUM, PRODUCTS } from './products'
 export const MIN_DSCR = 1.25
 export const annuity = (a: number, t: number, rate: number) => { const r = rate / 1200; return r === 0 ? a / t : (a * r) / (1 - (1 + r) ** -t) }
 export function rateFor(code: string, grade: string, collateral: boolean) {
-  const p = PRODUCTS[code]; let r = p.base_rate + (GRADE_PREMIUM[grade] ?? 5); if (collateral && p.allows_collateral) r -= 1
+  const p = PRODUCTS[code]; let r = p.base_rate + (GRADE_PREMIUM[grade] ?? 5); if (collateral && p.allows_collateral && !p.public_conditions) r -= 1
   return Math.round(r * 100) / 100
 }
 export function availableCash(fin: { net_profit_year?: number | null; monthly_obligations?: number | null }, bkiMonthly: number) {

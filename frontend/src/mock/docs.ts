@@ -28,8 +28,8 @@ export function recognize(kind: string, filename: string, inn: string, amount: n
   const [rev, prof, turn, obl] = profile(inn)
   const v: Record<string, number> = kind === 'tax_return' ? { revenue_year: rev, net_profit_year: prof } : kind === 'bank_statement' ? { monthly_turnover: turn, monthly_obligations: obl } : { purchase_price: Math.max(500_000, Math.round((amount * 1.1) / 10_000) * 10_000) }
   const label = (f: string) => ({ revenue_year: 'строка 2110 «Выручка»', net_profit_year: 'строка 2400 «Чистая прибыль»', monthly_turnover: '«Среднемесячные поступления»', monthly_obligations: '«Платежи по кредитам в месяц»', purchase_price: '«Итого к оплате»' }[f] ?? f)
-  const items = Object.entries(v).map(([f, value]) => ({ id: nid(), field: f, value, original_value: value, source: 'mock', source_label: `${TITLE[kind]}, ${label(f)} (${filename}) · имитация распознавания`, confidence: 0.9, status: 'ok' as const, note: null, application_id: appId }))
-  return { items, status: 'ok', note: 'Значения найдены (имитация распознавания в демо-режиме)' }
+  const items = Object.entries(v).map(([f, value]) => ({ id: nid(), field: f, value, original_value: value, source: 'mock', source_label: `${TITLE[kind]}, ${label(f)} (${filename})`, confidence: 0.9, status: 'ok' as const, note: null, application_id: appId }))
+  return { items, status: 'ok', note: 'Значения подставлены из примера' }
 }
 
 type AppLike = { documents: { status: string; extractions?: Ex[] }[]; financials: Record<string, number | null> }

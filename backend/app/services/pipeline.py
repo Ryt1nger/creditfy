@@ -7,6 +7,7 @@ import logging
 import threading
 import time
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..config import settings
@@ -14,9 +15,10 @@ from ..db import SessionLocal
 from ..integrations import bki_lookup, egrul_lookup, pb_lookup
 from ..models import Application, Enrichment, InfoRequest, Offer, ScoreResult, now
 from ..products import DOC_KINDS, PRODUCTS, REJECT_REASONS
+from ..product_snapshot import product_for
 from . import offers as offers_svc
 from .scoring import MODEL_VERSION, score_application
-from .workflow import log, notify, transition
+from .workflow import AUTO_STATUSES, log, notify, transition
 
 logger = logging.getLogger("creditfy.pipeline")
 
@@ -42,7 +44,7 @@ def missing_items(app: Application) -> list[dict]:
         if val is None or val == "":
             items.append({"type": "field", "key": key, "label": label})
     have = {d.kind for d in app.documents if d.status != "rejected"}
-    need = list(PRODUCTS[app.product_code]["docs"]) + (["collateral_doc"] if app.has_collateral else [])
+    need = list(product_for(app)["docs"]) + (["collateral_doc"] if app.has_collateral else [])
     for kind in need:
         if kind not in have:
             items.append({"type": "document", "key": kind, "label": DOC_KINDS[kind]})
@@ -93,10 +95,10 @@ def _latest(app: Application, source: str) -> dict:
 
 def run_scoring(db: Session, app: Application) -> ScoreResult:
     egrul, bki, pb = _latest(app, "egrul"), _latest(app, "bki"), _latest(app, "pb")
-    out = score_application(app.product_code, app.amount, app.has_collateral, app.financials, egrul, bki, pb)
+    out = score_application(app.product_code, app.amount, app.has_collateral, app.financials, egrul, bki, pb, product=product_for(app))
     bki_pay = sum(l["monthly_payment"] for l in bki.get("active_loans", []))
     _, _, free = offers_svc.available_cash(app.financials, bki_pay)
-    rate = offers_svc.rate_for(PRODUCTS[app.product_code], out.grade, app.has_collateral)
+    rate = offers_svc.rate_for(product_for(app), out.grade, app.has_collateral)
     d = offers_svc.dscr(app.amount, app.term_months, rate, free)
     sr = ScoreResult(application_id=app.id, model_version=MODEL_VERSION, score=out.score, grade=out.grade, pd=out.pd,
                      dscr=d, route=out.route, stop_factors=out.stop_factors, factors=out.factors, flags=out.flags)
@@ -111,7 +113,7 @@ def run_scoring(db: Session, app: Application) -> ScoreResult:
 def _suggest(app: Application, sr: ScoreResult):
     bki_pay = sum(l["monthly_payment"] for l in _latest(app, "bki").get("active_loans", []))
     _, _, free = offers_svc.available_cash(app.financials, bki_pay)
-    return offers_svc.find_offer(app.product_code, app.amount, app.term_months, sr.grade, app.has_collateral, free)
+    return offers_svc.find_offer(app.product_code, app.amount, app.term_months, sr.grade, app.has_collateral, free, product=product_for(app))
 
 
 def issue_offer(db: Session, app: Application, calc: offers_svc.OfferCalc, by: str, note: str | None = None) -> Offer:
@@ -182,32 +184,67 @@ def advance(db: Session, app: Application) -> None:
         db.commit()
 
 
+_active: set[int] = set()
+_active_lock = threading.Lock()
+
+
 def _run(app_id: int) -> None:
-    with SessionLocal() as db:
-        app = db.get(Application, app_id)
-        try:
-            advance(db, app)
-        except Exception:  # noqa: BLE001
-            logger.exception("Сбой конвейера заявки %s", app_id)
-            db.rollback()
-            app = db.get(Application, app_id)
-            log(db, app, "error", "Техническая задержка при обработке", "Мы повторим обработку автоматически.",
-                client_visible=True)
-        finally:
-            app = db.get(Application, app_id)
-            app.processing = False
-            db.commit()
+    try:
+        for attempt in range(3):
+            with SessionLocal() as db:
+                app = db.get(Application, app_id)
+                if app is None:
+                    return
+                try:
+                    advance(db, app)
+                    app.processing = False
+                    db.commit()
+                    return
+                except Exception:
+                    logger.exception("Сбой конвейера заявки %s, попытка %s", app_id, attempt + 1)
+                    db.rollback()
+                    if attempt == 2:
+                        app = db.get(Application, app_id)
+                        app.processing = False
+                        log(db, app, "error", "Обработка временно приостановлена",
+                            "Повторить обработку можно кнопкой в карточке заявки.")
+                        db.commit()
+            time.sleep(0.1 * (attempt + 1))
+    finally:
+        with _active_lock:
+            _active.discard(app_id)
 
 
 def launch(db: Session, app: Application) -> None:
-    """Запускает конвейер: в тестах синхронно, в приложении — в фоновом потоке."""
-    app.processing = True
-    db.commit()
-    if settings.pipeline_step_delay == 0:
-        _run(app.id)
-        db.refresh(app)
-    else:
-        threading.Thread(target=_run, args=(app.id,), daemon=True).start()
+    """Один обработчик заявки на процесс. В MVP API запускается одним worker."""
+    with _active_lock:
+        if app.id in _active:
+            return
+        _active.add(app.id)
+    try:
+        app.processing = True
+        db.commit()
+        if settings.pipeline_step_delay == 0:
+            _run(app.id)
+            db.refresh(app)
+        else:
+            threading.Thread(target=_run, args=(app.id,), daemon=True).start()
+    except Exception:
+        with _active_lock:
+            _active.discard(app.id)
+        raise
+
+
+def recover_pending() -> None:
+    """После рестарта продолжаем с последнего зафиксированного этапа."""
+    with SessionLocal() as db:
+        pending = db.scalars(select(Application).where(Application.status.in_(AUTO_STATUSES))).all()
+        for app in pending:
+            log(db, app, "recovery", "Обработка продолжена после перезапуска")
+            launch(db, app)
+        for app in db.scalars(select(Application).where(Application.processing.is_(True), Application.status.not_in(AUTO_STATUSES))):
+            app.processing = False
+        db.commit()
 
 
 def resume_after_answer(db: Session, app: Application) -> None:

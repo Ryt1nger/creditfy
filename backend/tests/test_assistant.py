@@ -16,7 +16,7 @@ def test_intents(case):
 
 def test_answer_is_demo_and_built_from_catalog(client, ivan):
     r = client.post("/api/assistant/ask", json={"text": "Какая ставка у овердрафта?"}, headers=ivan).json()
-    assert r["is_demo"] and r["source"] == "demo" and r["matched"] and "19,5%" in r["answer"]
+    assert r["is_demo"] and r["source"] == "demo" and r["matched"] and "26" in r["answer"]
     miss = client.post("/api/assistant/ask", json={"text": "абракадабра"}, headers=ivan).json()
     assert not miss["matched"] and miss["suggestions"]
     assert client.post("/api/assistant/ask", json={"text": "x"}).status_code == 401

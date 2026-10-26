@@ -1,6 +1,6 @@
 """Контракт ИИ-слоя. Всё, что зовёт ИИ, идёт ТОЛЬКО через этот интерфейс.
 
-Сейчас подключена заглушка (StubProvider). Следующий шаг — DeepSeek (open-weights, локально),
+Сейчас подключена заглушка (StubProvider). Следующий шаг — локальная модель (open-weights, локально),
 см. docs/ai-integration.md. Приложение полностью работоспособно и без ИИ: решения по заявке принимают
 правила и скоринг, ИИ лишь помогает формулировками и подсказками.
 """
@@ -18,7 +18,7 @@ class ProductRecommendation:
 @dataclass
 class AiText:
     text: str
-    source: str  # "stub" | "deepseek"
+    source: str  # "stub" | "local-model"
     is_stub: bool = True
 
 

@@ -113,9 +113,9 @@ function evaluate(p: (typeof PRODUCTS)[string], v: Record<string, any>, text: st
   const st = Math.min(Math.max(term ?? p.max_term, p.min_term), p.max_term)
   if (term) { if (term >= p.min_term && term <= p.max_term) { score += 0.5; reasons.push(`Срок ${termS(term)} подходит`) } else caveats.push(`Срок по продукту ${p.min_term === p.max_term ? termS(p.min_term) : `${termS(p.min_term)}–${termS(p.max_term)}`}, предложим ${termS(st)}`) }
   if (form && age != null && !blockers.length) reasons.push(`Доступен для ${form}, бизнесу от ${el.min_business_age_months} мес.`)
-  if (el.collateral === 'none') reasons.push('Без залога и поручительств'); else if (coll === 'yes' && p.allows_collateral) reasons.push('Залог снизит ставку на 1 п.п.')
-  const rate = Math.round((p.base_rate - (coll === 'yes' && p.allows_collateral ? 1 : 0)) * 100) / 100
-  return { code: p.code, name: p.name, tagline: p.tagline, score: Math.round(score * 100) / 100, amount: sa, term_months: st, rate_from: rate, monthly_payment: Math.round(annuity(sa, st, rate)), reasons: reasons.slice(0, 4), caveats, blockers, docs: p.docs.map((d) => ({ kind: d.kind, label: DOC_KINDS[d.kind] })) }
+  if (el.collateral === 'none') reasons.push('Без залога; поручительство определяется банком'); else if (coll === 'yes' && p.allows_collateral) reasons.push('Финансирование с обеспечением')
+  const rate = Math.round((p.base_rate - (coll === 'yes' && p.allows_collateral && !p.public_conditions ? 1 : 0)) * 100) / 100
+  return { code: p.code, name: p.name, tagline: p.tagline, score: Math.round(score * 100) / 100, amount: sa, term_months: st, rate_from: rate, monthly_payment: p.code === 'overdraft' ? null : Math.round(annuity(sa, st, rate)), reasons: reasons.slice(0, 4), caveats, blockers, docs: p.docs.map((d) => ({ kind: d.kind, label: DOC_KINDS[d.kind] })) }
 }
 export function recommendFor(s: Sess): Recommendations {
   const v = known(s), ev = Object.values(PRODUCTS).map((p) => evaluate(p, v, s.text))

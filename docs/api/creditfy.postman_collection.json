@@ -98,10 +98,6 @@
        {
         "key": "Content-Type",
         "value": "application/json"
-       },
-       {
-        "key": "Authorization",
-        "value": "Bearer {{token}}"
        }
       ],
       "url": {
@@ -114,6 +110,37 @@
         "auth",
         "register"
        ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"name\": \"Новый клиент\",\n  \"email\": \"client@example.test\",\n  \"password\": \"test-password\",\n  \"role\": \"client\"\n}"
+      }
+     }
+    },
+    {
+     "name": "POST /api/auth/demo",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/auth/demo",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "auth",
+        "demo"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{}"
       }
      }
     },
@@ -796,6 +823,34 @@
       "body": {
        "mode": "raw",
        "raw": "{\n  \"value\": 750000\n}"
+      }
+     }
+    },
+    {
+     "name": "POST /api/applications/{app_id}/retry",
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       },
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": {
+       "raw": "{{base}}/api/applications/{{app_id}}/retry",
+       "host": [
+        "{{base}}"
+       ],
+       "path": [
+        "api",
+        "applications",
+        "{{app_id}}",
+        "retry"
+       ]
       }
      }
     },

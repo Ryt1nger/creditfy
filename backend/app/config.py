@@ -1,9 +1,12 @@
 """Конфигурация из переменных окружения. Секретов в коде нет — только dev-значения по умолчанию."""
 import os
+import warnings
 
 
 class Settings:
     database_url: str = os.getenv("DATABASE_URL", "sqlite:///./data/creditfy.db")
+    environment: str = os.getenv("APP_ENV", "development")
+    demo_access_enabled: bool = os.getenv("DEMO_ACCESS_ENABLED", "0") == "1"
     jwt_secret: str = os.getenv("JWT_SECRET", "dev-only-secret-change-me-0123456789abcdef")
     jwt_ttl_hours: int = int(os.getenv("JWT_TTL_HOURS", "12"))
     # Пауза между шагами конвейера: чтобы статус на экране менялся «вживую». В тестах = 0.
@@ -18,9 +21,19 @@ class Settings:
     # всё работает на правилах и банке вопросов, модель лишь формулирует вопросы и подстраховывает разбор.
     llm_enabled: bool = os.getenv("LLM_ENABLED", "0").lower() in ("1", "true", "yes")
     llm_base_url: str = os.getenv("LLM_BASE_URL", "http://localhost:11434/v1")
-    llm_model: str = os.getenv("LLM_MODEL", "deepseek-r1:1.5b")
+    llm_model: str = os.getenv("LLM_MODEL", "")
     llm_max_calls: int = int(os.getenv("LLM_MAX_CALLS", "3"))  # на одну сессию квиза / одну заявку
     llm_timeout: float = float(os.getenv("LLM_TIMEOUT", "8"))
 
+    def validate(self):
+        weak = len(self.jwt_secret) < 32 or self.jwt_secret.startswith(("dev-only", "change-me", "replace-with"))
+        if weak and self.environment == "production":
+            raise RuntimeError("Задайте случайный JWT_SECRET длиной не менее 32 символов")
+        if weak:
+            warnings.warn("Используется учебный JWT_SECRET; замените его перед публикацией", stacklevel=2)
+        if os.getenv("RENDER") and self.database_url.startswith("sqlite") and not os.getenv("ALLOW_EPHEMERAL_STORAGE"):
+            warnings.warn("На Render нужна постоянная PostgreSQL: временная SQLite теряет зарегистрированные аккаунты при пересоздании сервиса", stacklevel=2)
 
 settings = Settings()
+if settings.database_url.startswith(("postgres://", "postgresql://")):
+    settings.database_url = settings.database_url.replace("postgres://", "postgresql+psycopg://", 1).replace("postgresql://", "postgresql+psycopg://", 1)

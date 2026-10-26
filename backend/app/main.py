@@ -14,7 +14,10 @@ logging.basicConfig(level=logging.INFO)
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    settings.validate()
     Base.metadata.create_all(engine)
+    from .product_snapshot import migrate
+    migrate(engine, SessionLocal)
     from .catalog import load_into_db
     with SessionLocal() as db:
         load_into_db(db)
@@ -22,6 +25,8 @@ async def lifespan(_: FastAPI):
         from .seed import seed_demo
         with SessionLocal() as db:
             seed_demo(db)
+    from .services.pipeline import recover_pending
+    recover_pending()
     yield
 
 

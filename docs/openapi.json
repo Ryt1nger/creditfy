@@ -104,6 +104,45 @@
     }
    }
   },
+  "/api/auth/demo": {
+   "post": {
+    "tags": [
+     "auth"
+    ],
+    "summary": "Demo Login",
+    "operationId": "demo_login_api_auth_demo_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/DemoIn",
+        "default": {}
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
   "/api/me": {
    "get": {
     "tags": [
@@ -825,6 +864,51 @@
       }
      }
     },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/applications/{app_id}/retry": {
+   "post": {
+    "tags": [
+     "client"
+    ],
+    "summary": "Retry Processing",
+    "operationId": "retry_processing_api_applications__app_id__retry_post",
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "app_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "App Id"
+      }
+     }
+    ],
     "responses": {
      "200": {
       "description": "Successful Response",
@@ -1860,7 +1944,7 @@
      },
      "amount": {
       "type": "integer",
-      "maximum": 100000000.0,
+      "maximum": 150000000.0,
       "exclusiveMinimum": 0.0,
       "title": "Amount"
      },
@@ -1945,7 +2029,7 @@
       "anyOf": [
        {
         "type": "integer",
-        "maximum": 100000000.0,
+        "maximum": 150000000.0,
         "exclusiveMinimum": 0.0
        },
        {
@@ -2091,7 +2175,7 @@
      },
      "amount": {
       "type": "integer",
-      "maximum": 100000000.0,
+      "maximum": 150000000.0,
       "exclusiveMinimum": 0.0,
       "title": "Amount"
      },
@@ -2251,6 +2335,12 @@
     "type": "object",
     "title": "DeclineIn"
    },
+   "DemoIn": {
+    "properties": {},
+    "additionalProperties": false,
+    "type": "object",
+    "title": "DemoIn"
+   },
    "DocReviewIn": {
     "properties": {
      "status": {
@@ -2290,7 +2380,7 @@
       "anyOf": [
        {
         "type": "integer",
-        "maximum": 100000000.0,
+        "maximum": 150000000.0,
         "exclusiveMinimum": 0.0
        },
        {
@@ -2525,10 +2615,7 @@
      },
      "role": {
       "type": "string",
-      "enum": [
-       "client",
-       "bank"
-      ],
+      "const": "client",
       "title": "Role",
       "default": "client"
      }

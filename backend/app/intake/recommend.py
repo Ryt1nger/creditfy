@@ -112,14 +112,14 @@ def _evaluate(p: dict, v: dict, text: str) -> dict:
     if form and age is not None and not blockers:
         reasons.append(f"Доступен для {form}, бизнесу от {el['min_business_age_months']} мес.")
     if el["collateral"] == "none":
-        reasons.append("Без залога и поручительств")
+        reasons.append("Без залога; поручительство определяется банком")
     elif coll == "yes" and p["allows_collateral"]:
-        reasons.append("Залог снизит ставку на 1 п.п.")
-    rate = round(p["base_rate"] - (1.0 if coll == "yes" and p["allows_collateral"] else 0), 2)
+        reasons.append("Финансирование с обеспечением")
+    rate = round(p["base_rate"] - (1.0 if coll == "yes" and p["allows_collateral"] and not p.get("public_conditions") else 0), 2)
     pay = round(annuity(s_amount, s_term, rate))
     return {
         "code": p["code"], "name": p["name"], "tagline": p["tagline"], "score": round(score, 2),
-        "amount": s_amount, "term_months": s_term, "rate_from": rate, "monthly_payment": pay,
+        "amount": s_amount, "term_months": s_term, "rate_from": rate, "monthly_payment": None if p["code"] == "overdraft" else pay, "information_only": p["code"] == "overdraft",
         "reasons": reasons[:4], "caveats": caveats, "blockers": blockers,
         "docs": [{"kind": k, "label": DOC_KINDS[k]} for k in p["docs"]],
     }

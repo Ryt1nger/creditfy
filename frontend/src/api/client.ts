@@ -4,7 +4,7 @@ export const MODE: 'mock' | 'live' = (import.meta.env.VITE_API_MODE as string) =
 // Адрес API: пусто — тот же origin (nginx/Vite-прокси); для статического хостинга (Render) задаётся при сборке.
 export const API_BASE: string = ((import.meta.env.VITE_API_BASE as string | undefined) ?? '').replace(/\/$/, '')
 export class ApiError extends Error { constructor(public status: number, message: string) { super(message) } }
-const TOKEN = 'creditfy.token'
+const TOKEN = `creditfy.token.${MODE}.${API_BASE || 'same-origin'}`
 export const getToken = () => { try { return sessionStorage.getItem(TOKEN) } catch { return null } }
 export const setToken = (t: string | null) => { try { t ? sessionStorage.setItem(TOKEN, t) : sessionStorage.removeItem(TOKEN) } catch { /* ignore */ } }
 if (MODE === 'mock') initEngine()
@@ -22,6 +22,7 @@ export async function api<T = any>(method: string, path: string, body?: unknown)
   if (!res.ok) {
     let msg = 'Что-то пошло не так'
     try { const j = await res.json(); msg = typeof j.detail === 'string' ? j.detail : Array.isArray(j.detail) ? j.detail.map((d: any) => d.msg).join('; ') : msg } catch { /* ignore */ }
+    if (res.status === 401 && getToken()) { setToken(null); window.dispatchEvent(new Event('creditfy:session-expired')) }
     throw new ApiError(res.status, msg)
   }
   return res.status === 204 ? (undefined as T) : res.json()

@@ -44,6 +44,7 @@ class Application(Base):
     # пусто, пока клиент не дошёл до шага «Компания» в мастере
     company_id: Mapped[int | None] = mapped_column(ForeignKey("companies.id"), nullable=True)
     product_code: Mapped[str] = mapped_column(String(30))
+    product_snapshot: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     amount: Mapped[int] = mapped_column(Integer)
     term_months: Mapped[int] = mapped_column(Integer)
     purpose: Mapped[str | None] = mapped_column(Text, nullable=True)

@@ -7,7 +7,7 @@ import { months, pct, rub } from '../lib/format'
 
 const CHIPS = ['Закупить товар', 'Купить оборудование']
 const CHECKS = ['ИНН компании или ИП', 'Выручка и прибыль за последний год', 'Средний оборот по счёту', 'Выписка по счёту за 12 месяцев', 'Налоговая декларация или отчётность']
-const FAQ = [['Сколько занимает рассмотрение?', 'В демо простые заявки решаются автоматически за несколько секунд, сложные уходят кредитному специалисту.'], ['Одобрение гарантировано?', 'Нет. Выбор продукта не означает одобрение — решение принимается после проверки данных и оценки риска.'], ['Что если не хватает документов?', 'Заявку можно отправить сразу. Банк пришлёт запрос на недостающее, и рассмотрение продолжится после вашего ответа.'], ['Нужны ли звонки и SMS?', 'Нет. Все уведомления приходят в кабинет, подписание договора тоже онлайн.']]
+const FAQ = [['Сколько занимает рассмотрение?', 'Простые заявки решаются автоматически за несколько секунд, сложные уходят кредитному специалисту.'], ['Одобрение гарантировано?', 'Нет. Выбор продукта не означает одобрение — решение принимается после проверки данных и оценки риска.'], ['Что если не хватает документов?', 'Заявку можно отправить сразу. Банк пришлёт запрос на недостающее, и рассмотрение продолжится после вашего ответа.'], ['Нужны ли звонки и SMS?', 'Нет. Все уведомления приходят в кабинет, подписание договора тоже онлайн.']]
 
 const FLOW = [
   ['Описываешь задачу', 'Подскажем продукт и покажем платёж до отправки', '~2 мин'],
@@ -28,14 +28,14 @@ function Preview({ i, on }: { i: number; on: boolean }) {
   return <div className="pv pv-sign" key={'p3' + on}><div className="sg" style={on ? { animation: 'pop .5s .4s both' } : undefined}><ICheck size={16} />Договор подписан</div><div className="mn"><small>зачислено</small><b>{on ? <CountUp to={4000000} suffix=" ₽" /> : '4 000 000 ₽'}</b></div></div>
 }
 function HowFlow() {
-  const [act, setAct] = useState(0); const [hold, setHold] = useState(false); const [seen, setSeen] = useState(false); const ref = useRef<HTMLElement>(null)
+  const [act, setAct] = useState(0); const [seen, setSeen] = useState(false); const ref = useRef<HTMLElement>(null)
   useEffect(() => {
     const el = ref.current; if (!el) return
     const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setSeen((v) => { if (!v) setAct(0); return true }) } else setSeen(false) }, { threshold: 0.35 })
     io.observe(el); return () => io.disconnect()
   }, [])
   return (
-    <section id="flow" ref={ref} className={'flow' + (seen && !hold ? ' go' : '')} onMouseEnter={() => setHold(true)} onMouseLeave={() => setHold(false)}>
+    <section id="flow" ref={ref} className={'flow' + (seen ? ' go' : '')}>
       <div className="flow-head"><div><span className="kicker">Путь заявки</span><h2>Как проходит заявка</h2></div><p>Четыре шага от идеи до денег на счёте. Статус виден в кабинете на каждом.</p><Link to="/apply" className="btn primary">Начать <IArrow /></Link></div>
       <div className="flow-track">
         <div className="line"><i style={{ width: (act / 3) * 100 + '%' }} /></div>
@@ -62,9 +62,9 @@ function CalcMini({ rate, onGo }: { rate: number; onGo: (amount: number, term: n
       <h4>Посчитай платёж</h4><p>Подвигай ползунки — платёж пересчитается сразу.</p>
       <div className="cm">
         <label><span>Сумма</span><b>{rub(amt)}</b></label>
-        <input type="range" min={300000} max={10000000} step={100000} value={amt} style={{ ['--p' as any]: pc(amt, 300000, 10000000) }} onChange={(e) => setAmt(Number(e.target.value))} aria-label="Сумма" />
+        <input type="range" min={300000} max={30000000} step={100000} value={amt} style={{ ['--p' as any]: pc(amt, 300000, 30000000) }} onChange={(e) => setAmt(Number(e.target.value))} aria-label="Сумма" />
         <label><span>Срок</span><b>{months(term)}</b></label>
-        <input type="range" min={6} max={36} step={1} value={term} style={{ ['--p' as any]: pc(term, 6, 36) }} onChange={(e) => setTerm(Number(e.target.value))} aria-label="Срок" />
+        <input type="range" min={12} max={60} step={1} value={term} style={{ ['--p' as any]: pc(term, 12, 60) }} onChange={(e) => setTerm(Number(e.target.value))} aria-label="Срок" />
       </div>
       <div className="cm-out"><div><small>платёж в месяц</small><b>≈ {rub(pay)}</b></div><button className="btn primary" onClick={() => onGo(amt, term)}>Оформить <IArrow /></button></div>
       <small className="cm-note">Предварительный расчёт при ставке от {pct(rate)}. Итоговые условия — после проверки.</small>
@@ -85,7 +85,7 @@ export default function Home() {
   const toggle = (i: number) => setTicked((t) => (t.includes(i) ? t.filter((x) => x !== i) : [...t, i]))
   return (
     <div>
-      {draft ? <TitleBar>Продолжим начатое</TitleBar> : <TitleBar>{'Твой бизнес'}{'новые возможности с ИИ'}</TitleBar>}
+      {draft ? <TitleBar>Продолжим начатое</TitleBar> : <TitleBar>{'Твой бизнес'}{'возможности для развития'}</TitleBar>}
       {draft && (
         <section className="draft">
           <div>
@@ -100,7 +100,7 @@ export default function Home() {
       <div className="chips2">{CHIPS.map((c) => <button key={c} onClick={() => go(c)}>{c}</button>)}</div>
       <div className="sec"><h2>Кредитные решения</h2><Link to="/apply">Все продукты <IArrow size={22} /></Link></div>
       <div className="pgrid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' }}>
-        {main.map((p, i) => <ProductCard i={i} key={p.code} name={SHORT[p.code].name} sub={SHORT[p.code].sub} onMore={() => setMore(p.code)} onClick={() => nav('/apply', { state: { code: p.code } })} />)}
+        {main.map((p, i) => <ProductCard i={i} key={p.code} name={(SHORT[p.code]?.name ?? p.name)} sub={(SHORT[p.code]?.sub ?? p.tagline)} onMore={() => setMore(p.code)} onClick={() => p.code === 'overdraft' ? setMore(p.code) : nav('/apply', { state: { code: p.code } })} />)}
       </div>
       {more && <ProductDetails code={more} onClose={() => setMore(null)} onPick={(c) => nav('/apply', { state: { code: c } })} />}
       <p className="muted small" style={{ marginTop: 24 }}>Выбери продукт самостоятельно или начни с подбора по задаче</p>
@@ -111,7 +111,7 @@ export default function Home() {
       {/* ── бенто «Почему удобно» ── */}
       <div className="sec" id="why"><h2>Прозрачно и под контролем</h2></div>
       <div className="bento">
-        <CalcMini rate={products?.find((p) => p.code === 'working_capital')?.base_rate ?? 17.5} onGo={(amount, term) => nav('/apply', { state: { code: 'working_capital', amount, term } })} />
+        <CalcMini rate={products?.find((p) => p.code === 'working_capital')?.base_rate ?? 23.5} onGo={(amount, term) => nav('/apply', { state: { code: 'working_capital', amount, term } })} />
         <article className="bx b-score">
           <h4>Прозрачный скоринг</h4><p>Видно, какие факторы и сколько баллов они дали.</p>
           <div className="bars">{[['Возраст бизнеса', 60], ['Рентабельность', 50], ['Просрочки', 40], ['Налоги', 20]].map(([t, v]: any) => <div key={t}><span>{t}</span><i><b style={{ width: v + '%' }} /></i><em>+{v}</em></div>)}</div>
@@ -124,19 +124,22 @@ export default function Home() {
         <div className="sec" id="rates"><h2>Условия по продуктам</h2><Link to="/apply">Подать заявку <IArrow size={22} /></Link></div>
         <div className="rates">
           {products.map((p, i) => {
-            const max = 30_000_000
+            const max = Math.max(...products.map((x) => x.max_amount))
             return (
-              <Link to="/apply" state={{ code: p.code }} key={p.code} className={'rate' + (i === 0 ? ' hot' : '')}>
+              <article key={p.code} className={'rate' + (i === 0 ? ' hot' : '')}>
                 {i === 0 && <span className="hotb">Популярный</span>}
                 <div className="r-name">{SHORT[p.code]?.name ?? p.name}</div>
-                <div className="r-big"><small>от</small>{pct(p.base_rate)}</div>
+                <div className="r-big"><small>без допуслуг от</small>{pct(p.base_rate)}</div>
+                {p.conditional_rate != null && <p className="small">С допуслугами от {pct(p.conditional_rate)} · {p.discount_conditions}</p>}
+                {p.source_url && <a href={p.source_url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>Условия на сайте Альфа-Банка</a>}
                 <div className="r-range"><i><b style={{ left: (p.min_amount / max) * 100 + '%', width: Math.max(6, ((p.max_amount - p.min_amount) / max) * 100) + '%' }} /></i><span>{rub(p.min_amount)} – {rub(p.max_amount)}</span></div>
-                <div className="r-chips"><span>{p.min_term === p.max_term ? months(p.min_term) : `${p.min_term}–${p.max_term} мес.`}</span><span>{p.fee_pct ? `комиссия ${pct(p.fee_pct)}` : 'без комиссии'}</span><span>{p.allows_collateral ? 'с залогом' : 'без залога'}</span></div>
-              </Link>
+                <div className="r-chips"><span>{p.code === 'overdraft' ? 'Транш 60/90 дней' : p.min_term === p.max_term ? months(p.min_term) : `${p.min_term}–${p.max_term} мес.`}</span><span>{p.code === 'overdraft' ? 'По использованию лимита' : 'Условия индивидуальны'}</span><span>{p.allows_collateral ? 'с залогом' : 'без залога'}</span></div>
+                <button className="btn light sm" onClick={() => p.code === 'overdraft' ? setMore(p.code) : nav('/apply', { state: { code: p.code } })}>{p.code === 'overdraft' ? 'Подробнее' : 'Оформить'}</button>
+              </article>
             )
           })}
         </div>
-        <p className="muted small" style={{ marginTop: 12 }}>Демонстрационные условия. Итоговая ставка зависит от оценки компании и залога.</p>
+        <p className="muted small" style={{ marginTop: 12 }}>Публичные условия по исследованию на 26.10.2026. Не оферта; финальные параметры зависят от решения банка.</p>
       </>)}
 
       {/* ── чек-лист и вопросы ── */}

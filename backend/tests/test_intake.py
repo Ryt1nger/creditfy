@@ -40,12 +40,12 @@ def test_quiz_asks_only_missing_and_recommends(client, ivan):
     assert "1,5 млн" in s["portrait"]["summary"]
     r = client.post(f"/api/intake/{s['id']}/recommend", headers=ivan).json()["recommendations"]
     assert r["primary"]["code"] == "working_capital" and len(r["alternatives"]) == 2
-    assert r["primary"]["reasons"] and "не реальные" in r["disclaimer"]
+    assert r["primary"]["reasons"] and "Не оферта" in r["disclaimer"]
     a = client.post(f"/api/intake/{s['id']}/application", json={"product_code": "working_capital"}, headers=ivan).json()
     assert a["status"] == "DRAFT" and a["amount"] == 1_500_000 and a["term_months"] == 24 and a["company"] is None
     assert a["wizard_step"] == 1
-    again = client.post(f"/api/intake/{s['id']}/application", json={"product_code": "overdraft"}, headers=ivan).json()
-    assert again["id"] == a["id"] and again["product_code"] == "overdraft" and again["term_months"] == 12  # без дублей
+    again = client.post(f"/api/intake/{s['id']}/application", json={"product_code": "equipment"}, headers=ivan).json()
+    assert again["id"] == a["id"] and again["product_code"] == "equipment" and again["term_months"] == 24  # без дублей
     assert client.post(f"/api/applications/{a['id']}/submit", headers=ivan).status_code == 422  # нет компании
     p = client.patch(f"/api/applications/{a['id']}", json={"company_inn": "7804123453", "wizard_step": 3}, headers=ivan).json()
     assert p["company"]["inn"] == "7804123453" and p["wizard_step"] == 3
@@ -62,12 +62,11 @@ def test_clarify_when_goal_ambiguous(client, ivan):
 
 def test_eligibility_young_business_and_collateral(client, ivan):
     s, seen = run_quiz(client, ivan, "Хотим открыть вторую точку и сделать ремонт, 6 млн, без залога",
-                       {"legal_form": "ИП", "business_age_months": 9, "term": 36})
+                       {"legal_form": "ИП", "business_age_months": 6, "term": 36})
     r = client.post(f"/api/intake/{s['id']}/recommend", headers=ivan).json()["recommendations"]
     blocked = {x["code"]: x["why"] for x in r["not_suitable"]}
     assert "investment" in blocked and "overdraft" in blocked  # бизнесу < 12 мес. и без залога от 5 млн
-    assert r["primary"]["code"] in ("working_capital", "equipment")
-    assert r["primary"]["amount"] == 6_000_000 and r["primary"]["monthly_payment"] > 0
+    assert r["primary"] is None  # все текущие программы требуют бизнеса от 9 месяцев
 
 
 def test_out_of_range_text_is_ignored_and_foreign_session_hidden(client, ivan, maria):

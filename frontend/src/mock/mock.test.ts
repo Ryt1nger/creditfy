@@ -11,7 +11,7 @@ describe('квиз в демо-режиме зеркалит бэкенд', () =
     expect(s.status).toBe('ready')
     expect(s.portrait.summary).toContain('1,5 млн')
     const r = recommendFor(s)
-    expect(r.primary?.code).toBe('working_capital'); expect(r.alternatives).toHaveLength(2); expect(r.disclaimer).toContain('не реальные')
+    expect(r.primary?.code).toBe('working_capital'); expect(r.alternatives).toHaveLength(2); expect(r.disclaimer).toContain('Не оферта')
   })
   it('уточняет двусмысленную цель одним вопросом, варианты — из банка', () => {
     const q = sessionDict(startSession(2, 1, 'Закупить товар и купить холодильник, 900к на полгода')).question!
@@ -19,7 +19,7 @@ describe('квиз в демо-режиме зеркалит бэкенд', () =
   })
   it('молодой бизнес без залога отсекает инвестиционный и овердрафт', () => {
     const s = startSession(3, 1, 'Хотим открыть вторую точку и сделать ремонт, 6 млн, без залога')
-    answerSession(s, 'legal_form', 'ИП'); answerSession(s, 'business_age_months', 9); answerSession(s, 'term', 36)
+    answerSession(s, 'legal_form', 'ИП'); answerSession(s, 'business_age_months', 6); answerSession(s, 'term', 36)
     const bad = recommendFor(s).not_suitable.map((x) => x.code)
     expect(bad).toEqual(expect.arrayContaining(['investment', 'overdraft']))
   })

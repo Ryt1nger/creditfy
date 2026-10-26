@@ -44,11 +44,11 @@ class StubProvider:
                 parts.append("Что снижает оценку: " + "; ".join(f["name"] for f in neg[:3]) + ".")
             if s["flags"]:
                 parts.append("Проверьте: " + "; ".join(s["flags"]) + ".")
-        parts.append("(Сводка собрана по шаблону — ИИ-модуль пока не подключён.)")
+
         return AiText(" ".join(parts), source="stub")
 
     def explain_status_for_client(self, ctx):
         return AiText(ctx.get("fallback", ""), source="stub")
 
     def extract_document(self, kind, filename, content):
-        return DocExtraction(status="not_available", note="Автоматическое распознавание документов подключается позже.")
+        return DocExtraction(status="not_available", note="Не удалось извлечь значения — заполните их вручную.")

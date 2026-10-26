@@ -38,7 +38,7 @@ export default function Wizard() {
   const [consent, setConsent] = useState(false); const [errs, setErrs] = useState<Record<string, string>>({})
   const fileRef = useRef<HTMLInputElement>(null); const [uploadKind, setUploadKind] = useState('')
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined); const ready = useRef(false)
-  const p = products?.find((x) => x.code === a?.product_code)
+  const p = a?.product ?? products?.find((x) => x.code === a?.product_code)
 
   const apply = useCallback((d: ApplicationDetail, hydrate = false) => {
     setA(d)
@@ -73,7 +73,7 @@ export default function Wizard() {
     return () => clearTimeout(timer.current)
   }, [amount, term, collateral, collNote, contact, purpose]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => { if (p) { setAmount((x) => Math.min(Math.max(x, p.min_amount), p.max_amount)); setTerm((t) => Math.min(Math.max(t, p.min_term), p.max_term)); if (!p.allows_collateral) setCollateral(false) } }, [p])
+  useEffect(() => { if (p) { setAmount((x) => Math.min(Math.max(x, p.min_amount), p.max_amount)); setTerm((t) => Math.min(Math.max(t, p.min_term), p.max_term)); if (!p.allows_collateral) setCollateral(false); else if (p.eligibility?.collateral === 'required') setCollateral(true) } }, [p])
   const calc = useQuery({ queryKey: ['calc', a?.product_code, amount, term, collateral], queryFn: () => api<CalcResult>('POST', '/calculator', { product_code: a!.product_code, amount, term_months: term, has_collateral: collateral }), enabled: !!p && !!a && step === 1 && amount > 0, placeholderData: (x) => x })
 
   async function lookup(v: string) {
@@ -146,7 +146,7 @@ export default function Wizard() {
   if (err) return <div className="focus-in"><ErrorBox error={err} retry={() => location.reload()} /></div>
   if (!a || !p || !products) return <div className="focus-in"><Loading h={400} /></div>
   const short = SHORT[a.product_code]
-  const termOpts = p.min_term === p.max_term ? [p.min_term] : Array.from(new Set([6, 9, 12, 18, 24, 30, 36, 48, 60, 72, 84, term].filter((t) => t >= p.min_term && t <= p.max_term))).sort((x, y) => x - y)
+  const termOpts = p.min_term === p.max_term ? [p.min_term] : Array.from(new Set([6, 9, 12, 18, 24, 30, 36, 48, 60, 72, 84, 96, 120, term].filter((t) => t >= p.min_term && t <= p.max_term))).sort((x, y) => x - y)
   const pctOf = (v: number, lo: number, hi: number) => Math.max(0, Math.min(100, ((v - lo) / (hi - lo)) * 100))
   const Nav = ({ label = 'Продолжить', onClick = () => go(step + 1), disabled = busy }: { label?: string; onClick?: () => void; disabled?: boolean }) => (
     <div className="wnav">{step > 1 ? <button className="back" disabled={busy} onClick={() => go(step - 1)}>Назад</button> : <span />}<button className="btn primary lg" onClick={onClick} disabled={disabled}>{busy ? 'Сохраняем…' : label} <IArrow /></button></div>
@@ -179,17 +179,17 @@ export default function Wizard() {
               <Field label="Срок" hint={p.min_term === p.max_term ? 'Срок фиксированный для этого продукта' : undefined}>
                 <select className="input" value={term} disabled={termOpts.length === 1} onChange={(e) => setTerm(Number(e.target.value))}>{termOpts.map((t) => <option key={t} value={t}>{months(t)}</option>)}</select>
               </Field>
-              <Field label="Обеспечение" hint={p.allows_collateral ? 'С залогом ставка ниже на 1 п. п.' : 'Для этого продукта залог не предусмотрен'}>
-                <select className="input" value={collateral ? 'yes' : 'no'} disabled={!p.allows_collateral} onChange={(e) => setCollateral(e.target.value === 'yes')}><option value="no">Без залога</option><option value="yes">С залогом</option></select>
+              <Field label="Обеспечение" hint={p.allows_collateral ? 'Для этой программы нужен залог' : 'Для этого продукта залог не предусмотрен'}>
+                <select className="input" value={collateral ? 'yes' : 'no'} disabled={!p.allows_collateral || p.eligibility?.collateral === 'required'} onChange={(e) => setCollateral(e.target.value === 'yes')}><option value="no">Без залога</option><option value="yes">С залогом</option></select>
               </Field>
             </div>
             {collateral && <Field label="Что в залоге"><input className="input" value={collNote} onChange={(e) => setCollNote(e.target.value)} placeholder="Например, грузовой автомобиль 2021 г." /></Field>}
-            <p className="sumnote">Демонстрационный расчёт.{calc.data ? ` Ориентировочный платёж — около ${rub(calc.data.monthly_payment)} в месяц.` : ''} Итоговые условия определит банк после проверки. {p.disclaimer}.</p>
+            <p className="sumnote">Предварительный расчёт.{calc.data ? ` Ориентировочный платёж — около ${rub(calc.data.monthly_payment)} в месяц.` : ''} Итоговые условия определит банк после проверки. {p.disclaimer}.</p>
             <Nav />
           </>)}
 
           {step === 2 && (<>
-            <div><h2>Найдём компанию по ИНН</h2><p className="sub">Покажем сведения из реестра (в демо — симулятор). Затем укажи, кто оформляет заявку.</p></div>
+            <div><h2>Найдём компанию по ИНН</h2><p className="sub">Укажи ИНН компании и представителя, который оформляет заявку.</p></div>
             <Field label="ИНН компании или ИП" error={errs.inn || innErr}>
               <div className="row" style={{ gap: 16, alignItems: 'stretch' }}>
                 <input className={'input num grow' + (innErr ? ' err' : '')} inputMode="numeric" maxLength={12} value={inn} onChange={(e) => lookup(e.target.value.replace(/\D/g, ''))} placeholder="0000000000" />
@@ -198,7 +198,7 @@ export default function Wizard() {
             </Field>
             {company && (
               <div className="grayrow" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 22, padding: '26px 30px' }} aria-live="polite">
-                <div className="row between"><b style={{ fontSize: 26 }}>{company.name}</b><span className="demotag">Демо-данные</span></div>
+                <div className="row between"><b style={{ fontSize: 26 }}>{company.name}</b><span className="demotag">Компания из примера</span></div>
                 <div className="kvgrid">
                   <div><div className="k">Статус</div><div className="v" style={{ color: company.status === 'active' ? undefined : 'var(--red)' }}>{company.status === 'active' ? 'Действует' : 'Ликвидируется'}</div></div>
                   <div><div className="k">Дата регистрации</div><div className="v">{company.reg_date ? dateOnly(company.reg_date) : '—'} <span className="muted small" style={{ fontWeight: 400 }}>· {age(company.age_months)}</span></div></div>
@@ -208,10 +208,10 @@ export default function Wizard() {
                 {company.status !== 'active' && <div className="pinkalert"><b>Компания ликвидируется</b><span>Заявку можно отправить, но банк, скорее всего, не сможет её одобрить.</span></div>}
               </div>
             )}
-            {demo && <details><summary className="small muted">Демо-ИНН для проверки сценариев</summary>
+            {demo && <details><summary className="small muted">Компании для проверки сценариев</summary>
               <div className="stack sm" style={{ marginTop: 12 }}>{demo.map((d) => <button key={d.inn} className="docrow" style={{ border: 0, textAlign: 'left', cursor: 'pointer', font: 'inherit' }} onClick={() => lookup(d.inn)}><span className="grow"><b>{d.name}</b><div className="tiny muted">{d.title}</div></span><span className="num small">{d.inn}</span></button>)}</div></details>}
             <hr className="sep" />
-            <div><h3>Кто оформляет заявку</h3><p className="sub">Эти данные видит только банк, в ИИ-модель они не передаются.</p></div>
+            <div><h3>Кто оформляет заявку</h3><p className="sub">Укажите представителя компании.</p></div>
             <div className="grid g2" style={{ gap: 20 }}>
               <Field label="ФИО заявителя" error={errs.cname}><input className="input" autoComplete="name" value={contact.name} onChange={(e) => setContact({ ...contact, name: e.target.value })} placeholder="Иванов Иван Иванович" /></Field>
               <Field label="Телефон" error={errs.phone}><input className="input" inputMode="tel" autoComplete="tel" value={contact.phone} onChange={(e) => setContact({ ...contact, phone: e.target.value })} placeholder="+7 (000) 000-00-00" /></Field>
@@ -237,8 +237,8 @@ export default function Wizard() {
                     <button className="btn white2 lg" disabled={busy} onClick={() => { setUploadKind(rd.kind); fileRef.current?.click() }}>{doc ? 'Заменить' : 'Загрузить'}</button>
                   </div>) })}
             </div>
-            <div className="demo-kit"><IDoc /><div className="grow"><b>Нет под рукой своих файлов?</b><div className="small muted">Подставим синтетические PDF/XLSX/CSV под ИНН {a.company?.inn}{MODE === 'mock' ? ' (в демо-режиме без сервера — имитация распознавания)' : ''}. Для ИП Волкова в комплекте есть расхождение: его покажем как «Требует проверки».</div></div>
-              <button className="btn dark" disabled={busy || missingDocs.length === 0} onClick={demoKit}>Приложить демо-комплект</button></div>
+            <div className="demo-kit"><IDoc /><div className="grow"><b>Нет под рукой своих файлов?</b><div className="small muted">Подставим синтетические PDF/XLSX/CSV под ИНН {a.company?.inn}. Для ИП Волкова в комплекте есть расхождение: его покажем как «Требует проверки».</div></div>
+              <button className="btn dark" disabled={busy || missingDocs.length === 0} onClick={demoKit}>Приложить пример документов</button></div>
             {missingDocs.length > 0 && <p className="muted small">Не хватает: {missingDocs.map((d) => d.label.toLowerCase()).join(', ')}. Можно продолжить и дослать — банк запросит это в кабинете.</p>}
             <Nav />
           </>)}
@@ -272,8 +272,8 @@ export default function Wizard() {
               <div className="reviewrow"><span className="k">Финансы</span><span className="v">{a.review.fields.map((f) => `${f.label.toLowerCase()}: ${rub(f.value)}`).join(' · ')}</span><button onClick={() => go(4)}>Изменить</button></div>
             </div>
             {missingDocs.length > 0 && <div className="pinkalert"><b>Не хватает: {missingDocs.map((d) => d.label.toLowerCase()).join(', ')}</b><span>После отправки банк сможет запросить недостающий документ в кабинете.</span></div>}
-            <div className="callout"><IWarn /><div className="small">Оценка риска — не решение: итог определяют правила банка и специалист. ИИ кредитных решений не принимает. {p.disclaimer}.</div></div>
-            <label className="check"><input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} /><span>Согласен на обработку данных и запрос сведений<div className="small muted">из реестров и БКИ. В демо реальные запросы не выполняются.</div></span></label>
+            <div className="callout"><IWarn /><div className="small">Оценка риска — не решение: итог определяют правила банка и специалист.  {p.disclaimer}.</div></div>
+            <label className="check"><input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} /><span>Согласен на обработку данных и запрос сведений<div className="small muted">для рассмотрения заявки.</div></span></label>
             <Nav label="Отправить заявку" onClick={submit} disabled={busy || !consent} />
           </>)}
         </section></div>

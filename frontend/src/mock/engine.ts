@@ -201,21 +201,21 @@ function detail(a: any, u: Me): ApplicationDetail {
       ai_summary: aiSummary(a, sc),
       suggested_offer: sug ? { amount: sug.amount, term_months: sug.term_months, rate: sug.rate, monthly_payment: sug.monthly_payment, kind: sug.kind, dscr: sug.dscr, explanation: sug.explanation } : null,
       reject_reasons: Object.entries(REJECT_REASONS).map(([code, label]) => ({ code, label })),
-      can_decide: u.role === 'underwriter' && a.status === 'MANUAL_REVIEW', can_edit_docs: !['DISBURSED', 'REJECTED', 'CANCELLED'].includes(a.status),
+      can_decide: u.role === 'underwriter' && a.status === 'MANUAL_REVIEW', can_edit_docs: ['MANUAL_REVIEW', 'NEEDS_INFO'].includes(a.status) && !a.processing,
     }
   }
   return d
 }
 function aiSummary(a: any, s: any) {
   const m = (n: number) => new Intl.NumberFormat('ru-RU').format(n).replace(/ /g, ' ')
-  const p = [`${a.company.name} (ИНН ${a.company.inn}), бизнесу ${a.company.age_months ?? '?'} мес., статус в реестре: ${a.company.status}.`, `Запрос: ${m(a.amount)} ₽ на ${a.term_months} мес. по продукту «${PRODUCTS[a.product_code].name}».`]
+  const p = [`${a.company?.name ?? "Компания не указана"} (ИНН ${a.company?.inn ?? "—"}), бизнесу ${a.company?.age_months ?? "?"} мес., статус в реестре: ${a.company?.status ?? "—"}.`, `Запрос: ${m(a.amount)} ₽ на ${a.term_months} мес. по продукту «${PRODUCTS[a.product_code].name}».`]
   if (s) {
     p.push(`Скоринг: ${s.score} баллов, класс ${s.grade}, маршрут «${s.route}». DSCR при запрошенных условиях: ${s.dscr ?? 'н/д'}.`)
     if (s.stop_factors.length) p.push('Стоп-факторы: ' + s.stop_factors.map((x: any) => x.name).join('; ') + '.')
     const neg = s.factors.filter((f: any) => f.points < 0); if (neg.length) p.push('Что снижает оценку: ' + neg.slice(0, 3).map((f: any) => f.name).join('; ') + '.')
     if (s.flags.length) p.push('Проверьте: ' + s.flags.join('; ') + '.')
   }
-  p.push('(Сводка собрана по шаблону — ИИ-модуль пока не подключён.)')
+
   return { text: p.join(' '), source: 'stub', is_stub: true }
 }
 
@@ -273,8 +273,8 @@ function seed() {
 function signLoan(a: any) {
   const o = a.offers.find((x: any) => x.status === 'accepted')
   a.loan = { contract_number: `АБ-КД-${new Date().getFullYear()}-${String(a.id).padStart(5, '0')}`, amount: o.amount, rate: o.rate, term_months: o.term_months, signed_at: nowIso(), disbursed_at: nowIso(), schedule: schedule(o.amount, o.term_months, o.rate, new Date()) }
-  log(a, 'sign', 'Договор подписан электронной подписью (демо)', null, a.company.name)
-  go(a, 'DISBURSED', 'Кредит выдан', `Сумма ${o.amount} ₽ зачислена на расчётный счёт (симуляция)`); notify(a.owner_id, a, `Заявка ${a.number}: кредит выдан`)
+  log(a, 'sign', 'Подтверждено ознакомление с договором', null, a.company.name)
+  go(a, 'DISBURSED', 'Кредит выдан', `Сумма ${o.amount} ₽ зачислена на расчётный счёт`); notify(a.owner_id, a, `Заявка ${a.number}: кредит выдан`)
 }
 
 export function initEngine() {
@@ -303,11 +303,20 @@ R('POST', '/auth/login', ({ body }) => {
   const { password, ...pub } = u; return { token: 'mock.' + u.id, user: pub }
 })
 R('POST', '/auth/register', ({ body }) => {
+  try { localStorage.setItem(KEY + '.probe', '1'); localStorage.removeItem(KEY + '.probe') } catch { throw new ApiError(503, 'Браузер запрещает сохранение. Разрешите хранилище сайта или используйте серверный режим') }
+  if (body.role && body.role !== 'client') throw new ApiError(422, 'Регистрация доступна только предпринимателю')
   const email = String(body.email ?? '').trim().toLowerCase(), name = String(body.name ?? '').trim()
   if (name.length < 2) throw new ApiError(422, 'Укажите имя'); if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new ApiError(422, 'Укажите корректную почту'); if (String(body.password ?? '').length < 6) throw new ApiError(422, 'Пароль — не короче 6 символов')
+  if (['ivan@demo.ru', 'volkov@demo.ru', 'maria@demo.ru', 'operator@demo.ru', 'risk@demo.ru'].includes(email)) throw new ApiError(409, 'Этот адрес зарезервирован')
   if (db.users.some((x) => x.email === email)) throw new ApiError(409, 'Пользователь с такой почтой уже есть — войдите')
-  const u = { id: nid('usr'), name, email, role: body.role === 'bank' ? 'underwriter' : 'client', password: body.password }; db.users.push(u); save()
+  const u = { id: nid('usr'), name, email, role: 'client', password: body.password }; db.users.push(u); save()
   const { password, ...pub } = u; return { token: 'mock.' + u.id, user: pub }
+})
+R('POST', '/auth/demo', ({ body }) => {
+  if (Object.keys(body ?? {}).length) throw new ApiError(422, 'Параметры входа не принимаются')
+  const u = db.users.find((x) => x.email === 'ivan@demo.ru' && x.role === 'client')
+  if (!u) throw new ApiError(503, 'Учебный кабинет не подготовлен')
+  const { password, ...user } = u; return { token: 'mock.' + u.id, user }
 })
 R('GET', '/me', (c) => { const { password, ...pub } = need(c) as any; return pub })
 R('GET', '/products', (c) => { need(c); return Object.values(PRODUCTS).map(({ auto_limit, keywords, ...p }) => ({ ...p, disclaimer: DISCLAIMER })) })
@@ -318,11 +327,9 @@ R('POST', '/products/recommend', (c) => {
   const items = Object.values(PRODUCTS).map((p) => { const hits = p.keywords.filter((k) => t.includes(k)); let s = hits.length; if (amt) s += amt >= p.min_amount && amt <= p.max_amount ? 0.5 : -1; return { code: p.code, score: s, reason: hits.length ? `В описании есть признаки: ${hits.slice(0, 3).join(', ')}` : 'Подходит как универсальный вариант' } }).sort((a, b) => b.score - a.score)
   return { source: 'stub', is_stub: true, items }
 })
-R('POST', '/calculator', (c) => { need(c); const { product_code, amount, term_months, has_collateral } = c.body; const p = PRODUCTS[product_code]; const r = rateFor(product_code, 'B', !!has_collateral) - 1.5; const pay = annuity(amount, term_months, r); return { rate_from: r, monthly_payment: Math.round(pay), total_payment: Math.round(pay * term_months), fee: Math.round((amount * p.fee_pct) / 100) } })
+R('POST', '/calculator', (c) => { need(c); const { product_code, amount, term_months, has_collateral } = c.body; const p = PRODUCTS[product_code]; if (!p || !Number.isInteger(amount) || !Number.isInteger(term_months) || amount < p.min_amount || amount > p.max_amount || term_months < p.min_term || term_months > p.max_term) throw new ApiError(422, 'Параметры вне лимитов продукта'); if (product_code === 'overdraft') throw new ApiError(422, 'Овердрафт рассчитывается по фактическому использованию лимита'); const r = rateFor(product_code, 'B', !!has_collateral) - 1.5; const pay = annuity(amount, term_months, r); return { rate_from: r, monthly_payment: Math.round(pay), total_payment: Math.round(pay * term_months), fee: Math.round((amount * p.fee_pct) / 100) } })
 R('POST', '/assistant/ask', (c) => { need(c); return assistantAsk(String(c.body?.text ?? '').slice(0, 500)) })
-R('GET', '/ai/status', () => ({ provider: 'stub', is_stub: true, llm_enabled: false, requested: 'rules', planned_model: 'DeepSeek-R1 (открытые веса, локально через Ollama)', model: 'deepseek-r1:1.5b', max_calls: 3, timeout: 8, features: [
-  { key: 'intake', title: 'Формулировка вопросов квиза и один уточняющий вопрос', where: 'клиент · «Опишите задачу» (в демо-режиме — имитация)' }, { key: 'parse', title: 'Подстраховка разбора свободного текста', where: 'клиент · «Опишите задачу»' },
-  { key: 'extract', title: 'Запасной разбор документа, если парсер не нашёл чисел', where: 'клиент · документы' }] }))
+R('GET', '/ai/status', () => ({ provider: 'rules', is_stub: true, mode: 'rules', generative_model_active: false, llm_enabled: false, features: ['Подбор продуктов', 'Сводка заявки', 'Разбор документов'] }))
 
 // ─── квиз ───
 function getSess(c: Ctx, id: string) { const u = need(c); const s = db.sessions.find((x) => x.id === Number(id)); if (!s || s.owner_id !== u.id) throw new ApiError(404, 'Сессия не найдена'); return { s, u } }
@@ -331,6 +338,7 @@ R('GET', '/intake/:id', (c) => sessionDict(getSess(c, c.m[1]).s))
 R('POST', '/intake/:id/answer', (c) => { const { s } = getSess(c, c.m[1]); try { answerSession(s, c.body.field, c.body.value) } catch (e) { throw new ApiError(422, (e as Error).message) } save(); return sessionDict(s) })
 R('POST', '/intake/:id/recommend', (c) => { const { s } = getSess(c, c.m[1]); if (s.status === 'questions') throw new ApiError(409, 'Сначала ответьте на вопросы'); s.recommendations = recommendFor(s); save(); return sessionDict(s) })
 R('POST', '/intake/:id/application', (c) => {
+  if (c.body.product_code === 'overdraft') throw new ApiError(422, 'Овердрафт доступен для ознакомления')
   const { s, u } = getSess(c, c.m[1]); const p = PRODUCTS[c.body.product_code]; if (!p) throw new ApiError(422, 'Неизвестный продукт'); if (s.status === 'questions') throw new ApiError(409, 'Сначала ответьте на вопросы')
   const existing = s.application_id ? db.apps.find((a) => a.id === s.application_id) : null
   if (existing && existing.status === 'DRAFT') {
@@ -345,11 +353,12 @@ R('GET', '/demo/documents/:inn', (c) => { if (!innValid(c.m[1])) throw new ApiEr
 
 
 R('GET', '/applications', (c) => { const u = need(c); db.apps.forEach(expire); return db.apps.filter((a) => a.owner_id === u.id).sort((x, y) => y.id - x.id).map(summary) })
-R('POST', '/applications', (c) => { const u = need(c); if (u.role !== 'client') throw new ApiError(403, 'Заявку подаёт клиент'); const a = newApp(u, c.body); save(); return detail(a, u) })
+R('POST', '/applications', (c) => {
+  if (c.body.product_code === 'overdraft') throw new ApiError(422, 'Овердрафт доступен для ознакомления'); const u = need(c); if (u.role !== 'client') throw new ApiError(403, 'Заявку подаёт клиент'); const a = newApp(u, c.body); save(); return detail(a, u) })
 R('GET', '/applications/:id', (c) => { const { a, u } = getApp(c, c.m[1]); return detail(a, u) })
 R('PATCH', '/applications/:id', (c) => {
   const { a, u } = getApp(c, c.m[1]); if (!['DRAFT', 'NEEDS_INFO'].includes(a.status)) throw new ApiError(409, 'Заявку уже нельзя менять')
-  const b = c.body; const p = PRODUCTS[b.product_code ?? a.product_code]; if (!p) throw new ApiError(422, 'Неизвестный продукт')
+  const b = c.body; for (const k of ['amount', 'term_months', 'product_code', 'has_collateral', 'wizard_step']) if (k in b && b[k] == null) throw new ApiError(422, `${k} не может быть пустым`); const p = PRODUCTS[b.product_code ?? a.product_code]; if (!p) throw new ApiError(422, 'Неизвестный продукт')
   const amount = b.amount ?? a.amount, term = b.term_months ?? a.term_months
   if (amount < p.min_amount || amount > p.max_amount) throw new ApiError(422, `Сумма для этого продукта: ${p.min_amount}–${p.max_amount} ₽`)
   if (term < p.min_term || term > p.max_term) throw new ApiError(422, `Срок для этого продукта: ${p.min_term}–${p.max_term} мес.`)
@@ -360,6 +369,7 @@ R('PATCH', '/applications/:id', (c) => {
   a.updated_at = nowIso(); save(); return detail(a, u)
 })
 R('POST', '/applications/draft', (c) => {
+  if (c.body.product_code === 'overdraft') throw new ApiError(422, 'Овердрафт доступен для ознакомления')
   const u = need(c); if (u.role !== 'client') throw new ApiError(403, 'Заявку подаёт клиент'); const p = PRODUCTS[c.body.product_code]; if (!p) throw new ApiError(422, 'Неизвестный продукт')
   const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi)
   const a = newApp(u, { product_code: p.code, amount: clamp(c.body.amount ?? 2_000_000, p.min_amount, p.max_amount), term_months: clamp(c.body.term_months ?? 24, p.min_term, p.max_term), purpose: p.tagline, contact: { name: u.name } })
@@ -384,6 +394,10 @@ R('PATCH', '/extractions/:id', (c) => {
   x.a.updated_at = nowIso(); save(); return detail(x.a, u)
 })
 R('DELETE', '/applications/:id/documents/:doc', (c) => { const { a, u } = getApp(c, c.m[1]); if (!['DRAFT', 'NEEDS_INFO'].includes(a.status)) throw new ApiError(409, 'Нельзя удалить документ на этом этапе'); const gone = a.documents.find((d: any) => d.id === Number(c.m[2])); if (gone) dropDocNumbers(a, gone); a.documents = a.documents.filter((d: any) => d.id !== Number(c.m[2])); recheck(a); save(); return detail(a, u) })
+R('POST', '/applications/:id/retry', (c) => {
+  const { a, u } = getApp(c, c.m[1]); if (a.processing || !['SUBMITTED', 'COMPLETENESS_CHECK', 'ENRICHMENT', 'SCORING'].includes(a.status)) throw new ApiError(409, 'Повторная обработка сейчас недоступна')
+  void launch(a); return detail(a, u)
+})
 R('POST', '/applications/:id/submit', (c) => {
   const { a, u } = getApp(c, c.m[1]); if (a.status !== 'DRAFT') throw new ApiError(409, 'Заявка уже отправлена')
   if (!a.company) throw new ApiError(422, 'Укажите компанию по ИНН'); if (hasConflicts(a)) throw new ApiError(422, 'Есть данные с пометкой «Требует проверки» — исправьте или подтвердите их')
@@ -391,6 +405,12 @@ R('POST', '/applications/:id/submit', (c) => {
 })
 R('POST', '/applications/:id/info-requests/:rid/answer', (c) => {
   const { a, u } = getApp(c, c.m[1]); const r = a.info_requests.find((x: any) => x.id === Number(c.m[2])); if (!r || r.status !== 'open' || a.status !== 'NEEDS_INFO') throw new ApiError(409, 'Запрос уже закрыт')
+  for (const [k, v] of Object.entries<any>(c.body.fields ?? {})) {
+    if (k.startsWith('financials.') && v != null && v !== '') {
+      const n = Number(v), max = k.includes('year') ? 1e11 : 1e10, min = k.endsWith('net_profit_year') ? -1e11 : 0
+      if (!Number.isFinite(n) || !Number.isInteger(n) || n < min || n > max) throw new ApiError(422, 'Финансовое значение вне допустимого диапазона')
+    }
+  }
   for (const [k, v] of Object.entries<any>(c.body.fields ?? {})) { if (!(k in FIELD_LABELS)) throw new ApiError(422, `Поле ${k} нельзя изменить`); const [s, n] = k.includes('.') ? k.split('.') : ['purpose', 'purpose']; if (s === 'financials') a.financials[n] = v === '' ? null : Number(v); else if (s === 'contact') a.contact[n] = v; else a.purpose = v }
   const have = new Set(a.documents.filter((d: any) => d.status !== 'rejected').map((d: any) => d.kind))
   const left = r.items.filter((i: any) => (i.type === 'document' && !have.has(i.key)) || (i.type === 'field' && (() => { const [s, n] = i.key.includes('.') ? i.key.split('.') : ['purpose', 'purpose']; const v = s === 'financials' ? a.financials[n] : s === 'contact' ? a.contact[n] : a.purpose; return v == null || v === '' })()) || (i.type === 'text' && !String(c.body.answer ?? '').trim()))
@@ -418,6 +438,7 @@ R('GET', '/bank/applications/:id', (c) => { const { a, u } = getApp(c, c.m[1], t
 R('POST', '/bank/applications/:id/take', (c) => { const { a, u } = getApp(c, c.m[1], true); a.assigned_to_id = u.id; log(a, 'assign', `Заявку взял в работу: ${u.name}`, null, u.name, false); save(); return detail(a, u) })
 R('POST', '/bank/applications/:id/documents/:doc/review', (c) => {
   const { a, u } = getApp(c, c.m[1], true); const d = a.documents.find((x: any) => x.id === Number(c.m[2])); if (!d) throw new ApiError(404, 'Документ не найден')
+  if (!['MANUAL_REVIEW', 'NEEDS_INFO'].includes(a.status) || a.processing) throw new ApiError(409, 'Документы можно проверять только при рассмотрении заявки')
   d.status = c.body.status; d.review_comment = c.body.comment ?? null; log(a, 'doc_review', `Документ «${DOC_KINDS[d.kind]}»: ${d.status === 'verified' ? 'принят' : 'отклонён'}`, d.review_comment, u.name, d.status === 'rejected'); save(); return detail(a, u)
 })
 R('POST', '/bank/applications/:id/request-info', (c) => {
@@ -450,7 +471,10 @@ R('GET', '/bank/stats', (c) => {
 })
 
 export async function mockRequest(method: string, path: string, body: any, token: string | null) {
-  await sleep(120 + Math.random() * 120)
+  await sleep(40)
+  if (path.startsWith('/auth/') || path === '/me') {
+    try { const raw = localStorage.getItem(KEY); if (raw) { const stored = JSON.parse(raw); db.users = stored.users; db.seq.usr = Math.max(db.seq.usr ?? 0, ...db.users.map((u) => u.id)) } } catch { /* keep current state */ }
+  }
   const [p, qs] = path.split('?'); const me = token?.startsWith('mock.') ? db.users.find((u) => u.id === Number(token.slice(5))) ?? null : null
   for (const [m, re, fn] of routes) { const mt = p.match(re); if (m === method && mt) { try { return structuredClone(await fn({ me, body, query: new URLSearchParams(qs ?? ''), m: mt })) } catch (e) { if (e instanceof ApiError) throw e; console.error(e); throw new ApiError(500, 'Внутренняя ошибка демо-движка') } } }
   throw new ApiError(404, 'Не найдено: ' + path)

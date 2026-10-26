@@ -25,15 +25,5 @@ def get_provider() -> LLMProvider:
 
 
 def provider_status() -> dict:
-    on = settings.llm_enabled
-    return {
-        "provider": "local-llm" if on else "stub",
-        "is_stub": not on,
-        "llm_enabled": on,
-        "requested": "local-llm" if on else "rules",
-        "planned_model": f"{settings.llm_model} (открытые веса, локально через Ollama)",
-        "model": settings.llm_model,
-        "max_calls": settings.llm_max_calls,
-        "timeout": settings.llm_timeout,
-        "features": FEATURES,
-    }
+    return {"provider": "rules", "is_stub": True, "mode": "rules", "generative_model_active": False,
+            "llm_enabled": False, "features": ["Подбор продуктов", "Сводка заявки", "Разбор документов"]}

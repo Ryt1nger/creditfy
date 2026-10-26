@@ -60,7 +60,7 @@ function InfoForm({ a, r, act, busy }: { a: D; r: InfoRequest; act: (path: strin
         ) : it.type === 'field' ? (
           <div key={i} className="field"><label>{it.label}</label><input className="input num" inputMode="numeric" value={vals[it.key!] ?? ''} onChange={(e) => setVals({ ...vals, [it.key!]: e.target.value.replace(/[^\d\w\s+\-А-Яа-я]/g, '') })} /></div>
         ) : null)}
-        <div className="field"><label>Комментарий для банка (необязательно)</label><textarea className="input" value={text} onChange={(e) => setText(e.target.value)} placeholder="Например, пояснение по расхождению в данных" /></div>
+        <div className="field"><label>Ответ на запрос банка</label><textarea className="input" value={text} onChange={(e) => setText(e.target.value)} placeholder="Например, пояснение по расхождению в данных" /></div>
       </div>
       <button className="btn primary lg" disabled={busy} onClick={() => act(`/info-requests/${r.id}/answer`, { answer: text || null, fields: Object.fromEntries(Object.entries(vals).filter(([, v]) => v !== '')) })}>Отправить ответ <IArrow /></button>
     </section>
@@ -87,6 +87,7 @@ export default function ApplicationDetail() {
         {a.processing && <div className="callout"><div className="spinner" /><div className="small">Идёт автоматическая проверка — страница обновится сама. Можно не ждать: уведомим в кабинете.</div></div>}
       </section>
 
+      {!a.processing && ['SUBMITTED', 'COMPLETENESS_CHECK', 'ENRICHMENT', 'SCORING'].includes(a.status) && <button className="btn primary" disabled={m.isPending} onClick={() => act('/retry')}>Повторить обработку</button>}
       {open.map((r) => <InfoForm key={r.id} a={a} r={r} act={(p, b) => act(p, b)} busy={m.isPending} />)}
       {a.status === 'OFFER_READY' && offer && <OfferCard a={a} o={offer} act={act} busy={m.isPending} />}
 
@@ -94,8 +95,8 @@ export default function ApplicationDetail() {
         <section className="card stack accent">
           <span className="tag" style={{ alignSelf: 'flex-start' }}>Подписание</span><h2>Кредитный договор</h2>
           <div className="kv"><div><div className="k">Сумма</div><div className="v">{rub(offer.amount)}</div></div><div><div className="k">Срок</div><div className="v">{months(offer.term_months)}</div></div><div><div className="k">Ставка</div><div className="v">{pct(offer.rate)}</div></div><div><div className="k">Платёж</div><div className="v">{rub(offer.monthly_payment)}</div></div></div>
-          <div className="callout"><ISpark /><div className="small">Подписание и выдача средств в прототипе <b>симулируются</b>: реальных операций нет.</div></div>
-          <label className="check"><input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} /><span className="small">Я ознакомился с условиями договора и подписываю его электронной подписью (демо)</span></label>
+
+          <label className="check"><input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} /><span className="small">Подтверждаю ознакомление с условиями</span></label>
           <button className="btn primary lg" disabled={!consent || m.isPending} style={{ alignSelf: 'flex-start' }} onClick={() => act('/sign', { consent })}>Подписать и получить деньги</button>
         </section>)}
 
@@ -105,8 +106,8 @@ export default function ApplicationDetail() {
         <section className="card stack">
           <div className="row between wrap"><div><span className="pill green">Кредит выдан</span><h2 style={{ marginTop: 8 }}>Договор {a.loan.contract_number}</h2></div><div className="muted small">Подписан {dateOnly(a.loan.signed_at)}</div></div>
           <div className="scroll-x"><table className="table num"><thead><tr><th>№</th><th>Дата</th><th className="r">Платёж</th><th className="r">Основной долг</th><th className="r">Проценты</th><th className="r">Остаток</th></tr></thead>
-            <tbody>{a.loan.schedule.slice(0, 12).map((s) => <tr key={s.n}><td>{s.n}</td><td>{dateOnly(s.date)}</td><td className="r"><b>{rub(s.payment)}</b></td><td className="r">{rub(s.principal)}</td><td className="r">{rub(s.interest)}</td><td className="r">{rub(s.balance)}</td></tr>)}</tbody></table></div>
-          {a.loan.schedule.length > 12 && <p className="small muted">Показаны первые 12 платежей из {a.loan.schedule.length}.</p>}
+            <tbody>{a.loan.schedule.map((s) => <tr key={s.n}><td>{s.n}</td><td>{dateOnly(s.date)}</td><td className="r"><b>{rub(s.payment)}</b></td><td className="r">{rub(s.principal)}</td><td className="r">{rub(s.interest)}</td><td className="r">{rub(s.balance)}</td></tr>)}</tbody></table></div>
+
         </section>)}
 
       <div className="grid g2" style={{ alignItems: 'start' }}>
@@ -123,7 +124,7 @@ export default function ApplicationDetail() {
             </div>
             {a.purpose && <div className="small muted">Цель: {a.purpose}</div>}
           </section>
-          <section className="card soft stack sm"><div className="row"><ISpark style={{ color: 'var(--purple)' }} /><b>Простыми словами</b><span className="pill purple">ИИ · заглушка</span></div><p className="small">{a.ai_explanation.text}</p></section>
+          <section className="card soft stack sm"><div className="row"><ISpark style={{ color: 'var(--purple)' }} /><b>Простыми словами</b></div><p className="small">{a.ai_explanation.text}</p></section>
         </div>
       </div>
     </div>
